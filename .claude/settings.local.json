@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"/Users/leila/Library/CloudStorage/GoogleDrive-aubronsamuel@gmail.com/My Drive/Application/app/app/\\(app\\)\" -type f)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''\\\\n''.join\\(sorted\\(d.get\\(''dependencies'',{}\\).keys\\(\\)\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''\\\\n''.join\\(sorted\\(d.get\\(''devDependencies'',{}\\).keys\\(\\)\\)\\)\\)\")",
+      "Bash(ls \"/Users/leila/Library/CloudStorage/GoogleDrive-aubronsamuel@gmail.com/My Drive/Application/app/lib/{auth}/\")",
+      "Bash(find \"/g/Mon Drive/Application/app/app/\\(app\\)\" -maxdepth 3 -type d)",
+      "Bash(find \"/g/Mon Drive/Application/app/app/\\(app\\)\" -maxdepth 3 -type f)",
+      "Bash(ls \"G:/Mon Drive/Application/app/app/\\(app\\)/\")",
+      "Bash(ls \"G:/Mon Drive/Application/app/app/\\(app\\)/rh/\")",
+      "Bash(ls \"G:/Mon Drive/Application/app/app/\\(app\\)/settings/\")",
+      "Bash(find \"G:/Mon Drive/Application/app/app/\\(app\\)/settings\" -name \"*.tsx\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm)",
+      "Bash(where node)",
+      "Bash(npm install)",
+      "Bash(cmd.exe /C \"dir /B \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\"\" 2>&1 | head -10\")",
+      "Bash(cmd.exe /C \"dir /B \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\"\"\")",
+      "Bash(cmd.exe /C \"npm install --prefix \"\"C:\\\\Users\\\\SAM PC FIXE\\\\AppData\\\\Local\\\\saas-spectacle\"\" --no-package-lock 2>&1 | tail -5\")",
+      "Bash(npm install --no-package-lock)",
+      "Bash(cmd.exe /C \"dir \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\\\\next\"\" /B 2>&1\")",
+      "Bash(cmd.exe /C \"dir /B \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\\\\next\"\"\")",
+      "Bash(ls \"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\\\\.bin\"\" 2>/dev/null | head -5 || echo \"not accessible \")",
+      "Bash(cmd.exe /C \"dir /b \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\\\\.bin\"\" 2>&1\")",
+      "Bash(cmd.exe /C \"dir \"\"G:\\\\Mon Drive\\\\Application\\\\app\\\\node_modules\\\\.bin\"\" 2>&1\")",
+      "Bash(cmd.exe /C \"cd /d \"\"G:\\\\Mon Drive\\\\Application\\\\app\"\" && npm --version\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); console.log\\(fs.existsSync\\(''G:/Mon Drive/Application/app/node_modules/next/dist/bin/next''\\)\\)\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const p=''G:/Mon Drive/Application/app/node_modules''; console.log\\(fs.existsSync\\(p\\)\\); const entries=fs.readdirSync\\(p\\).slice\\(0,10\\); console.log\\(entries\\)\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const p=''G:/Mon Drive/Application/app/node_modules''; const entries=fs.readdirSync\\(p\\); console.log\\(''total:'', entries.length\\); console.log\\(entries.slice\\(0,20\\)\\)\")",
+      "Bash(node \"/c/Program Files/nodejs/node_modules/npm/bin/npm-cli.js\" --prefix \"G:/Mon Drive/Application/app\" install)",
+      "Bash(node \"/c/Program Files/nodejs/node_modules/npm/bin/npm-cli.js\" --prefix \"G:/Mon Drive/Application/app\" install --cache \"C:/Users/SAMPCF~1/AppData/Local/npm-cache-local\" --maxsockets 1)"
+    ]
+  }
+}

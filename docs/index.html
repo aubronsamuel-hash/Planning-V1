@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎭 SaaS Spectacle Vivant — Documentation</title>
+  <style>
+    :root {
+      --primary: #1a1a2e;
+      --accent: #6c63ff;
+      --accent2: #e94560;
+      --green: #00b894;
+      --yellow: #fdcb6e;
+      --bg: #f8f9fc;
+      --card: #ffffff;
+      --text: #2d3436;
+      --muted: #636e72;
+      --border: #dfe6e9;
+      --tag-core: #6c63ff22;
+      --tag-core-text: #6c63ff;
+      --tag-feature: #00b89422;
+      --tag-feature-text: #00b894;
+      --tag-tech: #e9456022;
+      --tag-tech-text: #e94560;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, #16213e 100%);
+      color: white;
+      padding: 48px 32px 36px;
+      text-align: center;
+    }
+
+    header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { margin-top: 10px; color: #a0aec0; font-size: 1rem; max-width: 560px; margin: 10px auto 0; }
+
+    .version-badge {
+      display: inline-block;
+      margin-top: 16px;
+      background: rgba(108,99,255,0.25);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: #c0baff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    /* ── STACK PILLS ── */
+    .stack-bar {
+      background: #0f3460;
+      padding: 12px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .stack-pill {
+      background: rgba(255,255,255,0.08);
+      color: #cbd5e0;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* ── MAIN LAYOUT ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+    /* ── SECTION TITLES ── */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 36px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    /* ── ROLE QUICK-ACCESS ── */
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .role-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .role-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: var(--primary); }
+    .role-card ul { list-style: none; }
+    .role-card ul li { font-size: 0.8rem; color: var(--muted); margin: 3px 0; }
+    .role-card ul li a { color: var(--accent); text-decoration: none; }
+    .role-card ul li a:hover { text-decoration: underline; }
+
+    /* ── DOCS GRID ── */
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .doc-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: box-shadow 0.15s, transform 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .doc-card:hover {
+      box-shadow: 0 4px 16px rgba(108,99,255,0.12);
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .doc-card-top { display: flex; align-items: center; justify-content: space-between; }
+
+    .doc-number {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .doc-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 12px;
+    }
+
+    .tag-core    { background: var(--tag-core);    color: var(--tag-core-text); }
+    .tag-feature { background: var(--tag-feature);  color: var(--tag-feature-text); }
+    .tag-tech    { background: var(--tag-tech);    color: var(--tag-tech-text); }
+
+    .doc-icon { font-size: 1.5rem; line-height: 1; }
+    .doc-title { font-size: 0.95rem; font-weight: 700; color: var(--primary); }
+    .doc-desc { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── GLOSSARY ── */
+    .glossary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .glossary-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .glossary-item dt { font-size: 0.85rem; font-weight: 700; color: var(--primary); }
+    .glossary-item dd { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── DECISIONS ── */
+    .decisions-list {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .decision-item {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .decision-item:last-child { border-bottom: none; }
+    .decision-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 28px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 48px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <h1>🎭 SaaS Gestion du Spectacle Vivant</h1>
+  <p>Un SaaS dédié aux structures du spectacle vivant pour planifier leurs spectacles, gérer leurs équipes et donner à chaque collaborateur une visibilité claire sur son planning.</p>
+  <span class="version-badge">Version 12.0 · 02/03/2026 · ✅ Spec finale — Prête à coder</span>
+</header>
+
+<!-- ── STACK ── -->
+<div class="stack-bar">
+  <span class="stack-pill">Next.js 14 App Router</span>
+  <span class="stack-pill">TypeScript</span>
+  <span class="stack-pill">Prisma + PostgreSQL</span>
+  <span class="stack-pill">NextAuth.js</span>
+  <span class="stack-pill">AWS S3</span>
+  <span class="stack-pill">Resend</span>
+  <span class="stack-pill">Stripe</span>
+  <span class="stack-pill">Vercel + Railway</span>
+  <span class="stack-pill">Server-Sent Events</span>
+</div>
+
+<main>
+
+  <!-- ── ACCÈS PAR RÔLE ── -->
+  <h2 class="section-title">⚡ Accès rapide par profil</h2>
+  <div class="roles-grid">
+    <div class="role-card">
+      <h3>⚙️ Développeur back-end</h3>
+      <ul>
+        <li><a href="23-architecture-technique.md">23 — Architecture technique</a></li>
+        <li><a href="24-emails-templates.md">24 — Templates Email</a></li>
+        <li><a href="15-schema-prisma.md">15 — Schéma Prisma</a></li>
+        <li><a href="05-data-models.md">05 — Modèles de données</a></li>
+        <li><a href="06-regles-decisions.md">06 — Règles & Décisions</a></li>
+        <li><a href="03-workflows.md">03 — Workflows</a></li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>🖥️ Développeur front-end</h3>
+      <ul>
+        <li><a href="04-pages-interfaces-ux.md">04 — Pages & Interfaces</a></li>
+        <li><a href="03-workflows.md">03 — Workflows</a></li>
+        <li><a href="02-roles-permissions.md">02 — Rôles & Permissions</a></li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>🎨 Designer / UX</h3>
+      <ul>
+        <li><a href="04-pages-interfaces-ux.md">04 — Pages & Interfaces</a></li>
+        <li><a href="09-chef-de-poste-dashboard.md">09 — Dashboard Chef</a></li>
+        <li><a href="01-vision-concepts.md">01 — Vision & Concepts</a></li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>📋 Product / PO</h3>
+      <ul>
+        <li><a href="01-vision-concepts.md">01 — Vision & Concepts</a></li>
+        <li><a href="06-regles-decisions.md">06 — Règles & Décisions</a></li>
+        <li><a href="README.md">Tous les fichiers →</a></li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>🆕 Nouveau sur le projet</h3>
+      <ul>
+        <li>Lire dans l'ordre :</li>
+        <li><a href="01-vision-concepts.md">01</a> → <a href="02-roles-permissions.md">02</a> → <a href="03-workflows.md">03</a> → <a href="04-pages-interfaces-ux.md">04</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── FONDAMENTAUX ── -->
+  <h2 class="section-title">🎯 Fondamentaux</h2>
+  <div class="docs-grid">
+    <a class="doc-card" href="01-vision-concepts.md">
+      <div class="doc-card-top"><span class="doc-number">01</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">🎭</div>
+      <div class="doc-title">Vision & Concepts métier</div>
+      <div class="doc-desc">Vision produit, problème résolu, 9 types de projets, créneaux horaires, glossaire métier complet</div>
+    </a>
+    <a class="doc-card" href="02-roles-permissions.md">
+      <div class="doc-card-top"><span class="doc-number">02</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">👥</div>
+      <div class="doc-title">Rôles & Permissions</div>
+      <div class="doc-desc">6 rôles détaillés, matrice des permissions complète, implémentation JWT NextAuth</div>
+    </a>
+    <a class="doc-card" href="03-workflows.md">
+      <div class="doc-card-top"><span class="doc-number">03</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">🔄</div>
+      <div class="doc-title">Workflows principaux</div>
+      <div class="doc-desc">15 workflows : onboarding, DPAE, confirmation atomique, iCal, annulations, remplacements</div>
+    </a>
+    <a class="doc-card" href="04-pages-interfaces-ux.md">
+      <div class="doc-card-top"><span class="doc-number">04</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">🖥️</div>
+      <div class="doc-title">Pages, Interfaces & UX</div>
+      <div class="doc-desc">Wireframes ASCII, routes complètes, expériences clés, états vides, navigation</div>
+    </a>
+    <a class="doc-card" href="05-data-models.md">
+      <div class="doc-card-top"><span class="doc-number">05</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">🗄️</div>
+      <div class="doc-title">Modèles de données</div>
+      <div class="doc-desc">Schémas complets, champs, relations, enums — vue métier (Prisma-ready)</div>
+    </a>
+    <a class="doc-card" href="06-regles-decisions.md">
+      <div class="doc-card-top"><span class="doc-number">06</span><span class="doc-tag tag-core">Core</span></div>
+      <div class="doc-icon">📋</div>
+      <div class="doc-title">Règles & Décisions</div>
+      <div class="doc-desc">34 règles métier + 22 décisions techniques validées — fait foi pour le développement</div>
+    </a>
+  </div>
+
+  <!-- ── FEATURES ── -->
+  <h2 class="section-title">✨ Modules & Features</h2>
+  <div class="docs-grid">
+    <a class="doc-card" href="07-annuaire-collaborateurs.md">
+      <div class="doc-card-top"><span class="doc-number">07</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">📒</div>
+      <div class="doc-title">Annuaire collaborateurs</div>
+      <div class="doc-desc">Profil portable, fiche enrichie, spécialités, Lazy Auth / comptes GHOST</div>
+    </a>
+    <a class="doc-card" href="08-templates-projets.md">
+      <div class="doc-card-top"><span class="doc-number">08</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">📁</div>
+      <div class="doc-title">Templates de projets</div>
+      <div class="doc-desc">Créer et réutiliser des structures d'équipe pour accélérer la mise en place</div>
+    </a>
+    <a class="doc-card" href="09-chef-de-poste-dashboard.md">
+      <div class="doc-card-top"><span class="doc-number">09</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">🎯</div>
+      <div class="doc-title">Dashboard Chef de poste</div>
+      <div class="doc-desc">3 panneaux de contrôle, alertes temps réel, actions rapides sur son équipe</div>
+    </a>
+    <a class="doc-card" href="10-remplacements-urgents.md">
+      <div class="doc-card-top"><span class="doc-number">10</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">⚡</div>
+      <div class="doc-title">Remplacements urgents</div>
+      <div class="doc-desc">Workflow J-2, moteur de suggestion, traçabilité, seuil 48h</div>
+    </a>
+    <a class="doc-card" href="11-feuille-de-route-logistique.md">
+      <div class="doc-card-top"><span class="doc-number">11</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">🗺️</div>
+      <div class="doc-title">Feuille de route & Logistique</div>
+      <div class="doc-desc">Compagnon terrain mobile, phases de journée, transport, contacts locaux</div>
+    </a>
+    <a class="doc-card" href="12-annulations-reports.md">
+      <div class="doc-card-top"><span class="doc-number">12</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">❌</div>
+      <div class="doc-title">Annulations & Reports</div>
+      <div class="doc-desc">4 niveaux d'annulation, gestion des cachets, alertes DPAE, report de date</div>
+    </a>
+    <a class="doc-card" href="13-notifications.md">
+      <div class="doc-card-top"><span class="doc-number">13</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">🔔</div>
+      <div class="doc-title">Notifications</div>
+      <div class="doc-desc">Centre de notifs, catalogue 16 types, groupement intelligent, priorités</div>
+    </a>
+    <a class="doc-card" href="14-onboarding.md">
+      <div class="doc-card-top"><span class="doc-number">14</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">🚀</div>
+      <div class="doc-title">Onboarding</div>
+      <div class="doc-desc">Inscription, wizard 3 étapes, checklist de démarrage, états vides par profil</div>
+    </a>
+    <a class="doc-card" href="16-settings-organisation.md">
+      <div class="doc-card-top"><span class="doc-number">16</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">⚙️</div>
+      <div class="doc-title">Paramètres organisation</div>
+      <div class="doc-desc">/settings/organisation — profil, membres, facturation Stripe, suppression</div>
+    </a>
+    <a class="doc-card" href="19-module-tournee.md">
+      <div class="doc-card-top"><span class="doc-number">19</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">🚌</div>
+      <div class="doc-title">Module Tournée</div>
+      <div class="doc-desc">Hébergement, rooming list, gestion de flotte, préférences collaborateur</div>
+    </a>
+    <a class="doc-card" href="22-settings-compte.md">
+      <div class="doc-card-top"><span class="doc-number">22</span><span class="doc-tag tag-feature">Feature</span></div>
+      <div class="doc-icon">👤</div>
+      <div class="doc-title">Paramètres compte</div>
+      <div class="doc-desc">/settings — profil, sécurité, préférences, token iCal personnel</div>
+    </a>
+  </div>
+
+  <!-- ── TECHNIQUE ── -->
+  <h2 class="section-title">🏗️ Architecture & Technique</h2>
+  <div class="docs-grid">
+    <a class="doc-card" href="15-schema-prisma.md">
+      <div class="doc-card-top"><span class="doc-number">15</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">🗃️</div>
+      <div class="doc-title">Schéma Prisma</div>
+      <div class="doc-desc">Schéma Prisma complet prêt à migrer, enums, index, checklist de migration</div>
+    </a>
+    <a class="doc-card" href="17-back-office-super-admin.md">
+      <div class="doc-card-top"><span class="doc-number">17</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">🛠️</div>
+      <div class="doc-title">Back-office SUPER_ADMIN</div>
+      <div class="doc-desc">/admin — dashboard, gestion orgs, plans, suspension, logs, admins</div>
+    </a>
+    <a class="doc-card" href="18-webhooks-stripe.md">
+      <div class="doc-card-top"><span class="doc-number">18</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">💳</div>
+      <div class="doc-title">Webhooks Stripe</div>
+      <div class="doc-desc">Événements Stripe → plan, paiement échoué, trial, suspension automatique</div>
+    </a>
+    <a class="doc-card" href="20-plans-tarifaires.md">
+      <div class="doc-card-top"><span class="doc-number">20</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">💰</div>
+      <div class="doc-title">Plans tarifaires</div>
+      <div class="doc-desc">FREE / PRO / ENTERPRISE — tiers, limites, trial 14j, blocage quota, isReadOnly</div>
+    </a>
+    <a class="doc-card" href="21-cron-jobs.md">
+      <div class="doc-card-top"><span class="doc-number">21</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">⏰</div>
+      <div class="doc-title">Cron Jobs</div>
+      <div class="doc-desc">7 tâches planifiées — relances, DPAE J-1, trial, RGPD, nettoyage tokens</div>
+    </a>
+    <a class="doc-card" href="23-architecture-technique.md">
+      <div class="doc-card-top"><span class="doc-number">23</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">🏗️</div>
+      <div class="doc-title">Architecture technique</div>
+      <div class="doc-desc">Session multi-org, JWT, guards IDOR, soft delete, SSE, S3, erreurs API, intégrations</div>
+    </a>
+    <a class="doc-card" href="24-emails-templates.md">
+      <div class="doc-card-top"><span class="doc-number">24</span><span class="doc-tag tag-tech">Tech</span></div>
+      <div class="doc-icon">📧</div>
+      <div class="doc-title">Templates Email</div>
+      <div class="doc-desc">Catalogue Resend — 16 templates, variables, déclencheurs, lib/email.ts</div>
+    </a>
+  </div>
+
+  <!-- ── GLOSSAIRE ── -->
+  <h2 class="section-title">🗝️ Glossaire express</h2>
+  <dl class="glossary-grid">
+    <div class="glossary-item"><dt>Projet</dt><dd>Un spectacle ou une production (ex: Peter Pan, Garou Tournée 2026)</dd></div>
+    <div class="glossary-item"><dt>Représentation</dt><dd>Une occurrence unique d'un projet : un jour, un lieu, des horaires</dd></div>
+    <div class="glossary-item"><dt>Affectation</dt><dd>L'assignation d'un collaborateur à une représentation pour un poste</dd></div>
+    <div class="glossary-item"><dt>Poste requis</dt><dd>Un besoin en personnel sur un projet (ex : "2 Éclairagistes")</dd></div>
+    <div class="glossary-item"><dt>Équipe</dt><dd>Sous-groupe de postes/collaborateurs sous un Chef de poste</dd></div>
+    <div class="glossary-item"><dt>Cachet</dt><dd>Rémunération forfaitaire par représentation (intermittents)</dd></div>
+    <div class="glossary-item"><dt>DPAE</dt><dd>Déclaration Préalable À l'Embauche — obligatoire avant 1ère prestation</dd></div>
+    <div class="glossary-item"><dt>Compte GHOST</dt><dd>Collaborateur invité sans mot de passe — accès via magic links uniquement</dd></div>
+    <div class="glossary-item"><dt>Magic link</dt><dd>Lien email temporaire donnant accès sans connexion (UUID, usage unique)</dd></div>
+    <div class="glossary-item"><dt>Confirmation atomique</dt><dd>Chaque date confirmée/refusée indépendamment, effet immédiat</dd></div>
+    <div class="glossary-item"><dt>Get-in / Show / Get-out</dt><dd>Créneaux horaires d'une représentation (installation → spectacle → démontage)</dd></div>
+    <div class="glossary-item"><dt>isReadOnly</dt><dd>Mode lecture seule si trial expiré ou paiement échoué — données conservées</dd></div>
+  </dl>
+
+  <!-- ── DÉCISIONS CLÉS ── -->
+  <h2 class="section-title">📌 Décisions clés en un coup d'œil</h2>
+  <div class="decisions-list">
+    <div class="decision-item"><span class="decision-icon">✅</span>Abonnement mensuel par organisation (pas par utilisateur)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Confirmation d'affectation atomique — date par date, effet immédiat dans la grille</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Lazy Auth — compte fantôme (GHOST) → activation volontaire (ACTIVE)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Salle variable par représentation (pas de salle fixe par projet / tournée)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Export iCal (abonnement dynamique) + CSV paie (SAGE / Cegid)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>RGPD : anonymisation automatique après 3 ans d'inactivité (cron mensuel)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Créneaux horaires : Get-in / Warmup / Show / Get-out définis par représentation</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>9 types de projets (Théâtre, Concert, Cirque, Opéra, Danse, Maintenance…)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>3 niveaux de rôles : plateforme (User.role) · organisation (OrganizationMembership) · équipe (EquipeMembre)</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>Plans : FREE (0€/3 collabs) · PRO (49€/20 collabs) · ENTERPRISE (149€/illimité) · Trial 14j</div>
+    <div class="decision-item"><span class="decision-icon">✅</span>SSE (Server-Sent Events) pour les mises à jour temps réel de la grille planning</div>
+    <div class="decision-item"><span class="decision-icon">❌</span>Pas de dark mode · Pas de SMS · Interface français uniquement</div>
+  </div>
+
+</main>
+
+<footer>
+  Documentation v12.0 — Mise à jour : 02/03/2026 — Index généré automatiquement
+</footer>
+
+</body>
+</html>

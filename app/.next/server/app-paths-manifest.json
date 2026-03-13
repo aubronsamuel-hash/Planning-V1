@@ -1,0 +1,11 @@
+{
+  "/api/notifications/unread-count/route": "app/api/notifications/unread-count/route.js",
+  "/api/planning/global/route": "app/api/planning/global/route.js",
+  "/api/planning/[projetId]/route": "app/api/planning/[projetId]/route.js",
+  "/api/planning/[projetId]/stream/route": "app/api/planning/[projetId]/stream/route.js",
+  "/(app)/projets/[id]/page": "app/(app)/projets/[id]/page.js",
+  "/(app)/equipe/page": "app/(app)/equipe/page.js",
+  "/(app)/planning/page": "app/(app)/planning/page.js",
+  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
+  "/(app)/projets/page": "app/(app)/projets/page.js"
+}
