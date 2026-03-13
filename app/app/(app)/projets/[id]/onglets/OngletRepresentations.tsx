@@ -4,6 +4,7 @@
 // doc/04 §6.3 — tableau représentations
 // ─────────────────────────────────────────────────────────
 import { useState } from 'react'
+import Link from 'next/link'
 import type { Representation } from '../ProjetDetailClient'
 
 type Props = {
@@ -278,6 +279,15 @@ export function OngletRepresentations({ projetId, representations, canEdit, onRe
             >
               📋 Voir la grille
             </button>
+            {canEdit && (
+              <Link
+                href={`/projets/${projetId}/planning/${contextMenu.repId}/feuille-de-route`}
+                className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setContextMenu(null)}
+              >
+                🗺️ Feuille de route
+              </Link>
+            )}
             {canEdit && (
               <button
                 className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"

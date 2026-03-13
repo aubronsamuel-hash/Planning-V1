@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "Next.js Dev",
-      "runtimeExecutable": "npm.cmd",
-      "runtimeArgs": ["--prefix", "app", "run", "dev"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm", "--prefix", "app", "run", "dev"],
       "port": 3000
     },
     {
       "name": "Prisma Studio",
-      "runtimeExecutable": "npm.cmd",
-      "runtimeArgs": ["--prefix", "app", "run", "db:studio"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm", "--prefix", "app", "run", "db:studio"],
       "port": 5555
     }
   ]
