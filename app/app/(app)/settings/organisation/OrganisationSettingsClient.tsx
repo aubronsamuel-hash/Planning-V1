@@ -5,6 +5,7 @@
 // 4 onglets : Informations | Membres | Abonnement | Danger
 // ─────────────────────────────────────────────────────────
 import { useState } from 'react'
+import Link from 'next/link'
 
 type OrgRole = 'DIRECTEUR' | 'REGISSEUR' | 'RH' | 'COLLABORATEUR'
 
@@ -130,6 +131,15 @@ export default function OrganisationSettingsClient({ org, membres, currentUserId
               {tab.label}
             </button>
           ))}
+          {/* Lien Flotte (ENTERPRISE) — page dédiée */}
+          {org.plan === 'ENTERPRISE' && (
+            <Link
+              href="/settings/organisation/flotte"
+              className="pb-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
+            >
+              🚌 Flotte
+            </Link>
+          )}
         </nav>
       </div>
 
