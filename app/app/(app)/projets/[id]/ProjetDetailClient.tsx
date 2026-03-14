@@ -253,6 +253,27 @@ export function ProjetDetailClient({
               {o.label}
             </button>
           ))}
+          {/* Liens vers les sous-pages standalone */}
+          <div className="ml-2 border-l border-gray-200 pl-2 flex gap-1">
+            <Link
+              href={`/projets/${projet.id}/annulations`}
+              className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300 whitespace-nowrap transition-colors"
+            >
+              Annulations
+            </Link>
+            <Link
+              href={`/projets/${projet.id}/remplacements`}
+              className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300 whitespace-nowrap transition-colors"
+            >
+              ⚡ Remplacements
+            </Link>
+            <Link
+              href={`/projets/${projet.id}/tournee`}
+              className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300 whitespace-nowrap transition-colors"
+            >
+              🚌 Tournée
+            </Link>
+          </div>
         </div>
       </div>
 
