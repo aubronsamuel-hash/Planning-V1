@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, notFound, validationError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(
   _req: Request,
@@ -103,7 +104,7 @@ export async function GET(
       historique,
     })
   } catch (err) {
-    console.error('[GET /api/collaborateurs/[id]]', err)
+    void logger.error('GET /api/collaborateurs/[id]', err, { route: 'GET /api/collaborateurs/[id]' })
     return internalError()
   }
 }
@@ -145,7 +146,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/collaborateurs/[id]]', err)
+    void logger.error('PATCH /api/collaborateurs/[id]', err, { route: 'PATCH /api/collaborateurs/[id]' })
     return internalError()
   }
 }

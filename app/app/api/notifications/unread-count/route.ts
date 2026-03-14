@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
 
     return NextResponse.json({ count })
   } catch (err) {
-    console.error('[GET /api/notifications/unread-count]', err)
+    void logger.error('GET /api/notifications/unread-count', err, { route: 'GET /api/notifications/unread-count' })
     return internalError()
   }
 }

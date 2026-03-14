@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
 import { broadcastNotification } from '@/lib/notifications.server'
+import logger from '@/lib/logger'
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -107,7 +108,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[POST /api/feuille-de-route/[id]/publier]', err)
+    void logger.error('POST /api/feuille-de-route/[id]/publier', err, { route: 'POST /api/feuille-de-route/[id]/publier' })
     return internalError()
   }
 }

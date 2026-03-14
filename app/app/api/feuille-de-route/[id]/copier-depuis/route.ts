@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const CopierDepuisSchema = z.object({
   sourceFeuilleDeRouteId: z.string().cuid(),
@@ -105,7 +106,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[POST /api/feuille-de-route/[id]/copier-depuis]', err)
+    void logger.error('POST /api/feuille-de-route/[id]/copier-depuis', err, { route: 'POST /api/feuille-de-route/[id]/copier-depuis' })
     return internalError()
   }
 }

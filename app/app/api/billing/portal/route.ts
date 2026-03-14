@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
+import logger from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -49,7 +50,7 @@ export async function GET(_req: Request) {
 
     return NextResponse.json({ portalUrl: portalSession.url })
   } catch (err) {
-    console.error('[GET /api/billing/portal]', err)
+    void logger.error('GET /api/billing/portal', err, { route: 'GET /api/billing/portal' })
     return internalError()
   }
 }

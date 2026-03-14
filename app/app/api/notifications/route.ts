@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, validationError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ notifications: items, hasMore })
   } catch (err) {
-    console.error('[GET /api/notifications]', err)
+    void logger.error('GET /api/notifications', err, { route: 'GET /api/notifications' })
     return internalError()
   }
 }
@@ -75,7 +76,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/notifications]', err)
+    void logger.error('PATCH /api/notifications', err, { route: 'PATCH /api/notifications' })
     return internalError()
   }
 }

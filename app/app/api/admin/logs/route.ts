@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 function getDateFrom(period: string | null): Date | null {
   const now = new Date()
@@ -76,7 +77,7 @@ export async function GET(req: Request) {
       totalPages,
     })
   } catch (err) {
-    console.error('[GET /api/admin/logs]', err)
+    void logger.error('GET /api/admin/logs', err, { route: 'GET /api/admin/logs' })
     return internalError()
   }
 }

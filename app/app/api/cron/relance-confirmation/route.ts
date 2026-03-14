@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
 import { sendEmail, affectationConfirmationEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 const SEUIL_48H = 48 * 60 * 60 * 1000
 
@@ -157,7 +158,7 @@ export async function GET(request: Request) {
 
         processed++
       } catch (err) {
-        console.error(`[cron/relance-confirmation] Erreur affectation ${aff.id}:`, err)
+        void logger.error('cron/relance-confirmation Erreur affectation ${aff.id}', err, { route: 'cron/relance-confirmation' })
         errors++
       }
     }
@@ -165,7 +166,7 @@ export async function GET(request: Request) {
     console.log(`[cron/relance-confirmation] ${processed} relances envoyées, ${errors} erreurs`)
     return NextResponse.json({ processed, errors })
   } catch (err) {
-    console.error('[cron/relance-confirmation]', err)
+    void logger.error('cron/relance-confirmation', err, { route: 'cron/relance-confirmation' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

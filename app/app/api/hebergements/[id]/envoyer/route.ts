@@ -9,6 +9,7 @@ import { internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
 import { sendEmail } from '@/lib/email'
 import { roomingListEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -82,7 +83,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     })
 
     if (!sent.success) {
-      console.error('[POST /api/hebergements/[id]/envoyer] Email send failed:', sent.error)
+      void logger.warn('POST /api/hebergements/[id]/envoyer Email send failed', { route: 'POST /api/hebergements/[id]/envoyer', error: sent.error })
       return internalError()
     }
 
@@ -110,7 +111,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ success: true, sentAt: now })
   } catch (err) {
-    console.error('[POST /api/hebergements/[id]/envoyer]', err)
+    void logger.error('POST /api/hebergements/[id]/envoyer', err, { route: 'POST /api/hebergements/[id]/envoyer' })
     return internalError()
   }
 }

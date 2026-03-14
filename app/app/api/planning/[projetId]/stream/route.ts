@@ -7,6 +7,7 @@ import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound } from '@/lib/api-response'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request, { params }: { params: { projetId: string } }) {
   const { session, error } = await requireOrgSession()

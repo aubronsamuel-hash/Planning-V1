@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, validationError } from '@/lib/api-response'
 import type { DpaeStatus } from '@prisma/client'
+import logger from '@/lib/logger'
 
 // Item DPAE normalisé renvoyé au client
 export type DpaeItem = {
@@ -121,7 +122,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(grouped)
   } catch (err) {
-    console.error('[GET /api/rh]', err)
+    void logger.error('GET /api/rh', err, { route: 'GET /api/rh' })
     return internalError()
   }
 }

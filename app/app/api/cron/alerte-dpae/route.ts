@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
 import { sendEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 function emailLayout(content: string): string {
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#111;max-width:600px;margin:0 auto;padding:20px">${content}</body></html>`
@@ -145,7 +146,7 @@ export async function GET(request: Request) {
     console.log(`[cron/alerte-dpae] ${processed} affectations alertées`)
     return NextResponse.json({ processed })
   } catch (err) {
-    console.error('[cron/alerte-dpae]', err)
+    void logger.error('cron/alerte-dpae', err, { route: 'cron/alerte-dpae' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const ProposerSchema = z.object({
   candidatId: z.string().min(1),
@@ -164,7 +165,7 @@ export async function POST(
       },
     })
   } catch (err) {
-    console.error('[POST /api/remplacements/[affectationId]/proposer]', err)
+    void logger.error('POST /api/remplacements/[affectationId]/proposer', err, { route: 'POST /api/remplacements/[affectationId]/proposer' })
     return internalError()
   }
 }

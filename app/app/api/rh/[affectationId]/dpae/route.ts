@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { createInAppNotification } from '@/lib/notifications.server'
+import logger from '@/lib/logger'
 
 const PatchDpaeSchema = z.object({
   dpaeStatus: z.enum(['ENVOYEE', 'CONFIRMEE']),
@@ -112,7 +113,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/rh/[affectationId]/dpae]', err)
+    void logger.error('PATCH /api/rh/[affectationId]/dpae', err, { route: 'PATCH /api/rh/[affectationId]/dpae' })
     return internalError()
   }
 }

@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
 import type { OrganizationPlan } from '@prisma/client'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
       totalPages,
     })
   } catch (err) {
-    console.error('[GET /api/admin/organisations]', err)
+    void logger.error('GET /api/admin/organisations', err, { route: 'GET /api/admin/organisations' })
     return internalError()
   }
 }

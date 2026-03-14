@@ -9,6 +9,7 @@ import { internalError, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
 import { decrypt, maskSocialSecurityNumber } from '@/lib/crypto'
 import type { OrganizationPlan } from '@prisma/client'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -173,7 +174,7 @@ export async function GET(req: Request) {
       },
     })
   } catch (err) {
-    console.error('[GET /api/rh/export-csv]', err)
+    void logger.error('GET /api/rh/export-csv', err, { route: 'GET /api/rh/export-csv' })
     return internalError()
   }
 }

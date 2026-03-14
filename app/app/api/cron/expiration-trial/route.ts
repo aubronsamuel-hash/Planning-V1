@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
 import { sendEmail, trialEndingEmail, trialExpiredEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 export async function GET(request: Request) {
   const authError = verifyCronSecret(request)
@@ -159,7 +160,7 @@ export async function GET(request: Request) {
     console.log(`[cron/expiration-trial] ${avertissements} avertissements J-3, ${expirations} expirations`)
     return NextResponse.json({ avertissements, expirations })
   } catch (err) {
-    console.error('[cron/expiration-trial]', err)
+    void logger.error('cron/expiration-trial', err, { route: 'cron/expiration-trial' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 function getToken(req: Request): string | null {
   const { searchParams } = new URL(req.url)
@@ -102,7 +103,7 @@ export async function GET(req: Request) {
       confirmationStatus: affectation.confirmationStatus,
     })
   } catch (err) {
-    console.error('[GET /api/affectations/confirmer]', err)
+    void logger.error('GET /api/affectations/confirmer', err, { route: 'GET /api/affectations/confirmer' })
     return internalError()
   }
 }
@@ -149,7 +150,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, status: parsed.data.action })
   } catch (err) {
-    console.error('[POST /api/affectations/confirmer]', err)
+    void logger.error('POST /api/affectations/confirmer', err, { route: 'POST /api/affectations/confirmer' })
     return internalError()
   }
 }

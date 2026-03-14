@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const PatchChambreSchema = z.object({
   numero: z.string().max(20).nullable().optional(),
@@ -103,7 +104,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/chambres/[id]]', err)
+    void logger.error('PATCH /api/chambres/[id]', err, { route: 'PATCH /api/chambres/[id]' })
     return internalError()
   }
 }
@@ -132,7 +133,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/chambres/[id]]', err)
+    void logger.error('DELETE /api/chambres/[id]', err, { route: 'DELETE /api/chambres/[id]' })
     return internalError()
   }
 }

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, validationError, conflict } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
+import logger from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ checkoutUrl: checkoutSession.url })
   } catch (err) {
-    console.error('[POST /api/billing/checkout]', err)
+    void logger.error('POST /api/billing/checkout', err, { route: 'POST /api/billing/checkout' })
     return internalError()
   }
 }

@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden, conflict } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const CreateVehiculeAssignmentSchema = z.object({
   vehiculeId: z.string().cuid(),
@@ -117,7 +118,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(assignment, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/representations/[id]/transport]', err)
+    void logger.error('POST /api/representations/[id]/transport', err, { route: 'POST /api/representations/[id]/transport' })
     return internalError()
   }
 }

@@ -11,6 +11,7 @@ import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { detectConflict } from '@/lib/conflicts'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const PatchAffectationSchema = z.object({
   startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
@@ -46,7 +47,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(affectation)
   } catch (err) {
-    console.error('[GET /api/affectations/[id]]', err)
+    void logger.error('GET /api/affectations/[id]', err, { route: 'GET /api/affectations/[id]' })
     return internalError()
   }
 }
@@ -104,7 +105,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/affectations/[id]]', err)
+    void logger.error('PATCH /api/affectations/[id]', err, { route: 'PATCH /api/affectations/[id]' })
     return internalError()
   }
 }
@@ -179,7 +180,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     return NextResponse.json({ success: true, isTardive })
   } catch (err) {
-    console.error('[DELETE /api/affectations/[id]]', err)
+    void logger.error('DELETE /api/affectations/[id]', err, { route: 'DELETE /api/affectations/[id]' })
     return internalError()
   }
 }

@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const SwitchOrgSchema = z.object({
   organizationId: z.string().min(1),
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
       organizationName: membership.organization.name,
     })
   } catch (err) {
-    console.error('[POST /api/auth/switch-org]', err)
+    void logger.error('POST /api/auth/switch-org', err, { route: 'POST /api/auth/switch-org' })
     return internalError()
   }
 }

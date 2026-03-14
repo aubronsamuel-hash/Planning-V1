@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -59,7 +60,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       }))
     )
   } catch (err) {
-    console.error('[GET /api/projets/[id]/fdr-sources]', err)
+    void logger.error('GET /api/projets/[id]/fdr-sources', err, { route: 'GET /api/projets/[id]/fdr-sources' })
     return internalError()
   }
 }

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function POST(
   _req: Request,
@@ -54,7 +55,7 @@ export async function POST(
       suspendedReason: updated.suspendedReason,
     })
   } catch (err) {
-    console.error('[POST /api/admin/organisations/[id]/reactiver]', err)
+    void logger.error('POST /api/admin/organisations/[id]/reactiver', err, { route: 'POST /api/admin/organisations/[id]/reactiver' })
     return internalError()
   }
 }

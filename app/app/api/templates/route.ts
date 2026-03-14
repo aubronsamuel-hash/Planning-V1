@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, validationError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -39,7 +40,7 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (err) {
-    console.error('[GET /api/templates]', err)
+    void logger.error('GET /api/templates', err, { route: 'GET /api/templates' })
     return internalError()
   }
 }
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(template, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/templates]', err)
+    void logger.error('POST /api/templates', err, { route: 'POST /api/templates' })
     return internalError()
   }
 }

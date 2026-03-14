@@ -13,6 +13,7 @@ import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict } from '@/lib/api-response'
 import { detectConflict } from '@/lib/conflicts'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const ReporterSchema = z.object({
   nouvelleDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD requis'),
@@ -267,7 +268,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       nbConflits: conflitsDetectes.length,
     })
   } catch (err) {
-    console.error('[PATCH /api/representations/[id]/reporter]', err)
+    void logger.error('PATCH /api/representations/[id]/reporter', err, { route: 'PATCH /api/representations/[id]/reporter' })
     return internalError()
   }
 }

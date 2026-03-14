@@ -6,6 +6,7 @@
 // CLAUDE.md : iCal → exporter uniquement statut CONFIRMEE
 // ─────────────────────────────────────────────────────────
 import { prisma } from '@/lib/prisma'
+import logger from '@/lib/logger'
 
 type RouteParams = { params: { token: string } }
 

@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
 import { sendEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 function emailLayout(content: string): string {
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#111;max-width:600px;margin:0 auto;padding:20px">${content}</body></html>`
@@ -213,7 +214,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ alertesJ7, alertesJ2, fdrArchivees })
   } catch (err) {
-    console.error('[cron/alerte-postes]', err)
+    void logger.error('cron/alerte-postes', err, { route: 'cron/alerte-postes' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

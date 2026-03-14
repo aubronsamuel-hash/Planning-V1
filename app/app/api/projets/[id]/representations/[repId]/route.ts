@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const PatchRepresentationSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -55,7 +56,7 @@ export async function GET(req: Request, { params }: { params: { id: string; repI
 
     return NextResponse.json(rep)
   } catch (err) {
-    console.error('[GET /api/projets/[id]/representations/[repId]]', err)
+    void logger.error('GET /api/projets/[id]/representations/[repId]', err, { route: 'GET /api/projets/[id]/representations/[repId]' })
     return internalError()
   }
 }
@@ -109,7 +110,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; re
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/projets/[id]/representations/[repId]]', err)
+    void logger.error('PATCH /api/projets/[id]/representations/[repId]', err, { route: 'PATCH /api/projets/[id]/representations/[repId]' })
     return internalError()
   }
 }
@@ -138,7 +139,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string; r
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/projets/[id]/representations/[repId]]', err)
+    void logger.error('DELETE /api/projets/[id]/representations/[repId]', err, { route: 'DELETE /api/projets/[id]/representations/[repId]' })
     return internalError()
   }
 }

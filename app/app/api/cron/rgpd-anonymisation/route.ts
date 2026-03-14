@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
 import { sendEmail, rgpdWarningEmail } from '@/lib/email'
 import { randomUUID } from 'crypto'
+import logger from '@/lib/logger'
 
 const SEUIL_3ANS_MS = 3 * 365 * 24 * 60 * 60 * 1000
 const SEUIL_2ANS11MOIS_MS = (3 * 365 - 30) * 24 * 60 * 60 * 1000
@@ -71,7 +72,7 @@ export async function GET(request: Request) {
 
         avertissements++
       } catch (err) {
-        console.error(`[cron/rgpd] Erreur avertissement user ${user.id}:`, err)
+        void logger.error('cron/rgpd Erreur avertissement user ${user.id}', err, { route: 'cron/rgpd' })
       }
     }
 
@@ -132,14 +133,14 @@ export async function GET(request: Request) {
 
         anonymisations++
       } catch (err) {
-        console.error(`[cron/rgpd] Erreur anonymisation user ${user.id}:`, err)
+        void logger.error('cron/rgpd Erreur anonymisation user ${user.id}', err, { route: 'cron/rgpd' })
       }
     }
 
     console.log(`[cron/rgpd-anonymisation] ${avertissements} avertissements · ${anonymisations} anonymisations`)
     return NextResponse.json({ avertissements, anonymisations })
   } catch (err) {
-    console.error('[cron/rgpd-anonymisation]', err)
+    void logger.error('cron/rgpd-anonymisation', err, { route: 'cron/rgpd-anonymisation' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

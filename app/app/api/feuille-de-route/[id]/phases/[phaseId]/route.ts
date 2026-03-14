@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { notifierModification } from '../../route'
+import logger from '@/lib/logger'
 
 const PatchPhaseSchema = z.object({
   type: z.enum([
@@ -99,7 +100,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/feuille-de-route/[id]/phases/[phaseId]]', err)
+    void logger.error('PATCH /api/feuille-de-route/[id]/phases/[phaseId]', err, { route: 'PATCH /api/feuille-de-route/[id]/phases/[phaseId]' })
     return internalError()
   }
 }
@@ -137,7 +138,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/feuille-de-route/[id]/phases/[phaseId]]', err)
+    void logger.error('DELETE /api/feuille-de-route/[id]/phases/[phaseId]', err, { route: 'DELETE /api/feuille-de-route/[id]/phases/[phaseId]' })
     return internalError()
   }
 }

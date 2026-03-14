@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // ── Schéma de validation ───────────────────────────────────
 const PatchMeSchema = z.object({
@@ -45,7 +46,7 @@ export async function GET(_req: Request) {
       icalToken: undefined,
     })
   } catch (err) {
-    console.error('[GET /api/me]', err)
+    void logger.error('GET /api/me', err, { route: 'GET /api/me' })
     return internalError()
   }
 }
@@ -83,7 +84,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/me]', err)
+    void logger.error('PATCH /api/me', err, { route: 'PATCH /api/me' })
     return internalError()
   }
 }

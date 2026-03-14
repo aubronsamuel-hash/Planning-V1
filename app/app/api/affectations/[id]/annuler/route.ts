@@ -10,6 +10,7 @@ import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict } from '@/lib/api-response'
 import { broadcastNotification } from '@/lib/notifications.server'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const AnnulerSchema = z.object({
   raison: z.string().max(500).optional(),
@@ -166,7 +167,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json({ success: true, statut: nouveauStatut, estTardive })
   } catch (err) {
-    console.error('[PATCH /api/affectations/[id]/annuler]', err)
+    void logger.error('PATCH /api/affectations/[id]/annuler', err, { route: 'PATCH /api/affectations/[id]/annuler' })
     return internalError()
   }
 }

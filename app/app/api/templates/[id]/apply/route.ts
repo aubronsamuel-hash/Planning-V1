@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, validationError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const ApplySchema = z.object({ projetId: z.string().cuid() })
 
@@ -73,7 +74,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, message: 'Template appliqué avec succès' })
   } catch (err) {
-    console.error('[POST /api/templates/[id]/apply]', err)
+    void logger.error('POST /api/templates/[id]/apply', err, { route: 'POST /api/templates/[id]/apply' })
     return internalError()
   }
 }

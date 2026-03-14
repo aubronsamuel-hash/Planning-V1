@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError, validationError, notFound } from '@/lib/api-response'
 import type { OrganizationPlan } from '@prisma/client'
+import logger from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -96,7 +97,7 @@ export async function PATCH(
           }
         }
       } catch (stripeErr) {
-        console.error('[PATCH /api/admin/organisations/[id]/plan] Stripe error:', stripeErr)
+        void logger.error('PATCH /api/admin/organisations/[id]/plan Stripe error', stripeErr, { route: 'PATCH /api/admin/organisations/[id]/plan' })
         // On continue malgré l'erreur Stripe pour l'écriture DB
       }
     }
@@ -140,7 +141,7 @@ export async function PATCH(
       isReadOnly: updated.isReadOnly,
     })
   } catch (err) {
-    console.error('[PATCH /api/admin/organisations/[id]/plan]', err)
+    void logger.error('PATCH /api/admin/organisations/[id]/plan', err, { route: 'PATCH /api/admin/organisations/[id]/plan' })
     return internalError()
   }
 }

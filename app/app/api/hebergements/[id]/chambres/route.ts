@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const CreateChambreSchema = z.object({
   numero: z.string().max(20).optional(),
@@ -78,7 +79,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(chambre, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/hebergements/[id]/chambres]', err)
+    void logger.error('POST /api/hebergements/[id]/chambres', err, { route: 'POST /api/hebergements/[id]/chambres' })
     return internalError()
   }
 }

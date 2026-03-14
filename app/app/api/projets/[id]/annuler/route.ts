@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict, forbidden } from '@/lib/api-response'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const AnnulerProjetSchema = z.object({
   raison: z.string().max(500).optional(),
@@ -223,7 +224,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       nbDpaesSoumises: dpaesSoumises,
     })
   } catch (err) {
-    console.error('[PATCH /api/projets/[id]/annuler]', err)
+    void logger.error('PATCH /api/projets/[id]/annuler', err, { route: 'PATCH /api/projets/[id]/annuler' })
     return internalError()
   }
 }

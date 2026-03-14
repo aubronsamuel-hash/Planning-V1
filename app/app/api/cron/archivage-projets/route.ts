@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
+import logger from '@/lib/logger'
 
 export async function GET(request: Request) {
   const authError = verifyCronSecret(request)
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
     console.log(`[cron/archivage-projets] ${eligibles.length} projets archivés`)
     return NextResponse.json({ archived: eligibles.length })
   } catch (err) {
-    console.error('[cron/archivage-projets]', err)
+    void logger.error('cron/archivage-projets', err, { route: 'cron/archivage-projets' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(
   _req: Request,
@@ -58,7 +59,7 @@ export async function GET(
 
     return NextResponse.json(organization)
   } catch (err) {
-    console.error('[GET /api/admin/organisations/[id]]', err)
+    void logger.error('GET /api/admin/organisations/[id]', err, { route: 'GET /api/admin/organisations/[id]' })
     return internalError()
   }
 }

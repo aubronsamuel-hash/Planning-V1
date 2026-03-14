@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { requireOrgSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function POST() {
   try {
@@ -20,7 +21,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[POST /api/onboarding/complete]', err)
+    void logger.error('POST /api/onboarding/complete', err, { route: 'POST /api/onboarding/complete' })
     return internalError()
   }
 }

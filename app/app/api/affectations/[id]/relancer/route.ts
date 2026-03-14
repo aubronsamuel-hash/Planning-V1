@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -71,7 +72,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ success: true, confirmationLink })
   } catch (err) {
-    console.error('[POST /api/affectations/[id]/relancer]', err)
+    void logger.error('POST /api/affectations/[id]/relancer', err, { route: 'POST /api/affectations/[id]/relancer' })
     return internalError()
   }
 }

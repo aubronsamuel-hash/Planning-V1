@@ -9,6 +9,7 @@ import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { detectConflict } from '@/lib/conflicts'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const CreateAffectationSchema = z.object({
   collaborateurId: z.string().cuid(),
@@ -182,9 +183,21 @@ export async function POST(req: Request) {
       },
     })
 
+    void logger.info('Affectation créée', {
+      route: 'POST /api/affectations',
+      userId: session.user.id,
+      organizationId,
+      affectationId: affectation.id,
+      collaborateurId,
+      representationId,
+      contractTypeUsed,
+      hasConflict,
+      confirmationStatus,
+    })
+
     return NextResponse.json({ ...affectation, confirmationToken }, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/affectations]', err)
+    void logger.error('POST /api/affectations', err, { route: 'POST /api/affectations' })
     return internalError()
   }
 }

@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyCronSecret } from '@/lib/cron'
+import logger from '@/lib/logger'
 
 export async function GET(request: Request) {
   const authError = verifyCronSecret(request)
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
       propositionsExpirees,
     })
   } catch (err) {
-    console.error('[cron/nettoyage-tokens]', err)
+    void logger.error('cron/nettoyage-tokens', err, { route: 'cron/nettoyage-tokens' })
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/auth'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // ── Schéma de validation ───────────────────────────────────
 const PreferencesSchema = z.object({
@@ -45,7 +46,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/me/preferences]', err)
+    void logger.error('PATCH /api/me/preferences', err, { route: 'PATCH /api/me/preferences' })
     return internalError()
   }
 }

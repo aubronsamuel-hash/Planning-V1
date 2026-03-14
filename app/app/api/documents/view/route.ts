@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getDownloadPresignedUrl } from '@/lib/upload'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -81,7 +82,7 @@ export async function GET(req: Request) {
       downloadUrl,
     })
   } catch (err) {
-    console.error('[GET /api/documents/view]', err)
+    void logger.error('GET /api/documents/view', err, { route: 'GET /api/documents/view' })
     return internalError()
   }
 }

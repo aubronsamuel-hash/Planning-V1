@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { notifierModification } from '../route'
+import logger from '@/lib/logger'
 
 const CreateContactSchema = z.object({
   nom:       z.string().min(1).max(100),
@@ -66,7 +67,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(contact, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/feuille-de-route/[id]/contacts]', err)
+    void logger.error('POST /api/feuille-de-route/[id]/contacts', err, { route: 'POST /api/feuille-de-route/[id]/contacts' })
     return internalError()
   }
 }

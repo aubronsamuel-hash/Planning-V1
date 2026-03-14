@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const CreateHebergementSchema = z.object({
   nom: z.string().min(1).max(200),
@@ -65,7 +66,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(hebergements)
   } catch (err) {
-    console.error('[GET /api/projets/[id]/hebergements]', err)
+    void logger.error('GET /api/projets/[id]/hebergements', err, { route: 'GET /api/projets/[id]/hebergements' })
     return internalError()
   }
 }
@@ -114,7 +115,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(hebergement, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/projets/[id]/hebergements]', err)
+    void logger.error('POST /api/projets/[id]/hebergements', err, { route: 'POST /api/projets/[id]/hebergements' })
     return internalError()
   }
 }

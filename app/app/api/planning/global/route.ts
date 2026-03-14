@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -136,7 +137,7 @@ export async function GET(req: Request) {
       parDate: Object.fromEntries(parDate),
     })
   } catch (err) {
-    console.error('[GET /api/planning/global]', err)
+    void logger.error('GET /api/planning/global', err, { route: 'GET /api/planning/global' })
     return internalError()
   }
 }
