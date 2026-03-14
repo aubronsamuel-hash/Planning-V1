@@ -1,0 +1,11 @@
+{
+  "crons": [
+    { "path": "/api/cron/relance-confirmation", "schedule": "0 * * * *"  },
+    { "path": "/api/cron/alerte-dpae",          "schedule": "0 7 * * *"  },
+    { "path": "/api/cron/expiration-trial",     "schedule": "0 8 * * *"  },
+    { "path": "/api/cron/nettoyage-tokens",     "schedule": "0 3 * * *"  },
+    { "path": "/api/cron/rgpd-anonymisation",   "schedule": "0 2 1 * *"  },
+    { "path": "/api/cron/archivage-projets",    "schedule": "0 4 * * 1"  },
+    { "path": "/api/cron/alerte-postes",        "schedule": "0 8 * * *"  }
+  ]
+}
