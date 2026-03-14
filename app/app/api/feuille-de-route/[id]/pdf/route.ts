@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, notFound, forbidden } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const PHASE_ICONS: Record<string, string> = {
   DECHARGEMENT: '📦',
@@ -323,7 +324,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
     })
   } catch (err) {
-    console.error('[GET /api/feuille-de-route/[id]/pdf]', err)
+    void logger.error('GET /api/feuille-de-route/[id]/pdf', err, { route: 'GET /api/feuille-de-route/[id]/pdf' })
     return internalError()
   }
 }

@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -75,7 +76,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ affectations: result, remunerationMois, enAttente })
   } catch (err) {
-    console.error('[GET /api/mon-planning]', err)
+    void logger.error('GET /api/mon-planning', err, { route: 'GET /api/mon-planning' })
     return internalError()
   }
 }

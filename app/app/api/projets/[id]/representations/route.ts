@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // Schéma représentation unitaire
 const RepresentationUnitaireSchema = z.object({
@@ -141,7 +142,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(reprsEnrichies)
   } catch (err) {
-    console.error('[GET /api/projets/[id]/representations]', err)
+    void logger.error('GET /api/projets/[id]/representations', err, { route: 'GET /api/projets/[id]/representations' })
     return internalError()
   }
 }
@@ -236,7 +237,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ created: dates.length }, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/projets/[id]/representations]', err)
+    void logger.error('POST /api/projets/[id]/representations', err, { route: 'POST /api/projets/[id]/representations' })
     return internalError()
   }
 }

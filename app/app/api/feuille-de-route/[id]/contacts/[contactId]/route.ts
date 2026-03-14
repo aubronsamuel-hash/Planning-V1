@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { notifierModification } from '../../route'
+import logger from '@/lib/logger'
 
 const PatchContactSchema = z.object({
   nom:       z.string().min(1).max(100).optional(),
@@ -93,7 +94,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/feuille-de-route/[id]/contacts/[contactId]]', err)
+    void logger.error('PATCH /api/feuille-de-route/[id]/contacts/[contactId]', err, { route: 'PATCH /api/feuille-de-route/[id]/contacts/[contactId]' })
     return internalError()
   }
 }
@@ -131,7 +132,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/feuille-de-route/[id]/contacts/[contactId]]', err)
+    void logger.error('DELETE /api/feuille-de-route/[id]/contacts/[contactId]', err, { route: 'DELETE /api/feuille-de-route/[id]/contacts/[contactId]' })
     return internalError()
   }
 }

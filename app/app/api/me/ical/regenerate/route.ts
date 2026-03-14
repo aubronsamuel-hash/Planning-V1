@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // ── POST — Régénérer le token iCal ────────────────────────
 export async function POST(_req: Request) {
@@ -29,7 +30,7 @@ export async function POST(_req: Request) {
 
     return NextResponse.json({ icalToken: newToken, icalUrl })
   } catch (err) {
-    console.error('[POST /api/me/ical/regenerate]', err)
+    void logger.error('POST /api/me/ical/regenerate', err, { route: 'POST /api/me/ical/regenerate' })
     return internalError()
   }
 }

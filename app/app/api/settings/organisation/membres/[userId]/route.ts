@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict } from '@/lib/api-response'
 import type { OrganizationRole } from '@prisma/client'
+import logger from '@/lib/logger'
 
 // ── Schémas de validation ──────────────────────────────────
 const PatchRoleSchema = z.object({
@@ -92,7 +93,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       user: updated.user,
     })
   } catch (err) {
-    console.error('[PATCH /api/settings/organisation/membres/[userId]]', err)
+    void logger.error('PATCH /api/settings/organisation/membres/[userId]', err, { route: 'PATCH /api/settings/organisation/membres/[userId]' })
     return internalError()
   }
 }
@@ -150,7 +151,7 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/settings/organisation/membres/[userId]]', err)
+    void logger.error('DELETE /api/settings/organisation/membres/[userId]', err, { route: 'DELETE /api/settings/organisation/membres/[userId]' })
     return internalError()
   }
 }

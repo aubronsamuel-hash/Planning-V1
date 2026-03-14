@@ -9,6 +9,7 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -70,7 +71,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/settings/organisation]', err)
+    void logger.error('PATCH /api/settings/organisation', err, { route: 'PATCH /api/settings/organisation' })
     return internalError()
   }
 }
@@ -119,7 +120,7 @@ export async function DELETE(req: Request) {
           await stripe.subscriptions.cancel(sub.id)
         }
       } catch (stripeErr) {
-        console.error('[DELETE /api/settings/organisation] Stripe cancel error:', stripeErr)
+        void logger.error('DELETE /api/settings/organisation Stripe cancel error', stripeErr, { route: 'DELETE /api/settings/organisation' })
         // On continue malgré l'erreur Stripe
       }
     }
@@ -139,7 +140,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, redirectTo: '/goodbye' })
   } catch (err) {
-    console.error('[DELETE /api/settings/organisation]', err)
+    void logger.error('DELETE /api/settings/organisation', err, { route: 'DELETE /api/settings/organisation' })
     return internalError()
   }
 }

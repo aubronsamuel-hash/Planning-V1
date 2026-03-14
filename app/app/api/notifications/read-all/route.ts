@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function POST() {
   try {
@@ -25,7 +26,7 @@ export async function POST() {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[POST /api/notifications/read-all]', err)
+    void logger.error('POST /api/notifications/read-all', err, { route: 'POST /api/notifications/read-all' })
     return internalError()
   }
 }

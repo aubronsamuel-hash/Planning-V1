@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { notifierModification } from '../route'
+import logger from '@/lib/logger'
 
 const CreatePhaseSchema = z.object({
   type: z.enum([
@@ -75,7 +76,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(phase, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/feuille-de-route/[id]/phases]', err)
+    void logger.error('POST /api/feuille-de-route/[id]/phases', err, { route: 'POST /api/feuille-de-route/[id]/phases' })
     return internalError()
   }
 }

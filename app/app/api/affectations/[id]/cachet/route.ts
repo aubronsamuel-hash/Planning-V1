@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict, forbidden } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const CachetSchema = z.object({
   decision: z.enum(['DU', 'ANNULE']),
@@ -81,7 +82,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       cachetAnnulation: updated.cachetAnnulation,
     })
   } catch (err) {
-    console.error('[PATCH /api/affectations/[id]/cachet]', err)
+    void logger.error('PATCH /api/affectations/[id]/cachet', err, { route: 'PATCH /api/affectations/[id]/cachet' })
     return internalError()
   }
 }

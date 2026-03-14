@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { createInAppNotification } from '@/lib/notifications.server'
 import { sendEmail, paymentFailedEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 // Pas de auth session — vérification par signature Stripe uniquement
 // Next.js 14 App Router : req.text() lit le raw body sans configuration supplémentaire
@@ -86,8 +87,9 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   })
 
   if (!org) {
-    console.error(
-      `[webhook/stripe] subscription.updated: organisation introuvable pour customerId=${stripeCustomerId}`
+    void logger.warn(
+      `[webhook/stripe] subscription.updated: organisation introuvable pour customerId=${stripeCustomerId}`,
+      { route: "POST /api/webhooks/stripe" }
     )
     return
   }
@@ -97,8 +99,9 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
 
   if (!newPlan) {
     // Price inconnu — log d'erreur sans modifier Organization.plan
-    console.error(
-      `[webhook/stripe] subscription.updated: price_id inconnu "${priceId}" pour org=${org.id} — plan non modifié`
+    void logger.warn(
+      `[webhook/stripe] subscription.updated: price_id inconnu "${priceId}" pour org=${org.id} — plan non modifié`,
+      { route: "POST /api/webhooks/stripe" }
     )
     return
   }
@@ -173,8 +176,9 @@ async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
   })
 
   if (!org) {
-    console.error(
-      `[webhook/stripe] subscription.deleted: organisation introuvable pour customerId=${stripeCustomerId}`
+    void logger.warn(
+      `[webhook/stripe] subscription.deleted: organisation introuvable pour customerId=${stripeCustomerId}`,
+      { route: "POST /api/webhooks/stripe" }
     )
     return
   }
@@ -242,8 +246,9 @@ async function handlePaymentFailed(event: Stripe.Event): Promise<void> {
   })
 
   if (!org) {
-    console.error(
-      `[webhook/stripe] invoice.payment_failed: organisation introuvable pour customerId=${stripeCustomerId}`
+    void logger.warn(
+      `[webhook/stripe] invoice.payment_failed: organisation introuvable pour customerId=${stripeCustomerId}`,
+      { route: "POST /api/webhooks/stripe" }
     )
     return
   }
@@ -330,8 +335,9 @@ async function handlePaymentSucceeded(event: Stripe.Event): Promise<void> {
   })
 
   if (!org) {
-    console.error(
-      `[webhook/stripe] invoice.payment_succeeded: organisation introuvable pour customerId=${stripeCustomerId}`
+    void logger.warn(
+      `[webhook/stripe] invoice.payment_succeeded: organisation introuvable pour customerId=${stripeCustomerId}`,
+      { route: "POST /api/webhooks/stripe" }
     )
     return
   }
@@ -436,7 +442,7 @@ export async function POST(req: Request) {
   const sig = headers().get('stripe-signature')
 
   if (!sig) {
-    console.error('[webhook/stripe] Header stripe-signature manquant')
+    void logger.warn('webhook/stripe Header stripe-signature manquant', { route: 'POST /api/webhooks/stripe' })
     return NextResponse.json(
       { error: 'Signature manquante' },
       { status: 400 }
@@ -452,7 +458,7 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err) {
-    console.error('[webhook/stripe] Signature invalide:', err)
+    void logger.error('webhook/stripe Signature invalide', err, { route: 'POST /api/webhooks/stripe' })
     return NextResponse.json(
       { error: 'Signature Stripe invalide' },
       { status: 400 }
@@ -487,7 +493,7 @@ export async function POST(req: Request) {
         break
     }
   } catch (err) {
-    console.error(`[webhook/stripe] Erreur lors du traitement de ${event.type}:`, err)
+    void logger.error(`webhook/stripe Erreur lors du traitement de ${event.type}`, err, { route: 'POST /api/webhooks/stripe' })
     // Toujours répondre 200 pour éviter que Stripe retente indéfiniment
     // Les erreurs sont loguées côté serveur — ne pas exposer le détail à Stripe
   }

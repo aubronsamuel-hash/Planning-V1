@@ -10,6 +10,7 @@ import { requireOrgSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendEmail, magicLinkEmail } from '@/lib/email'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const InvitationSchema = z.object({
   email: z.string().email().toLowerCase(),
@@ -112,14 +113,14 @@ export async function POST(req: Request) {
 
         results.push({ email: inv.email, status: 'invited' })
       } catch (invErr) {
-        console.error(`[onboarding/equipe] Erreur pour ${inv.email}:`, invErr)
+        void logger.error('onboarding/equipe Erreur pour ${inv.email}', invErr, { route: 'onboarding/equipe' })
         results.push({ email: inv.email, status: 'error' })
       }
     }
 
     return NextResponse.json({ success: true, results })
   } catch (err) {
-    console.error('[POST /api/onboarding/equipe]', err)
+    void logger.error('POST /api/onboarding/equipe', err, { route: 'POST /api/onboarding/equipe' })
     return internalError()
   }
 }

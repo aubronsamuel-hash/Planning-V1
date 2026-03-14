@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { requireOrgSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // Palette fixe de 12 couleurs — Règle #34
 const PALETTE_COULEURS = [
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, projet })
   } catch (err) {
-    console.error('[POST /api/onboarding/premier-projet]', err)
+    void logger.error('POST /api/onboarding/premier-projet', err, { route: 'POST /api/onboarding/premier-projet' })
     return internalError()
   }
 }

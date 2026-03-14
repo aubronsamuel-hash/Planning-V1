@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const PALETTE_COLORS = [
   '#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F97316', '#EAB308',
@@ -63,7 +64,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(projet)
   } catch (err) {
-    console.error('[GET /api/projets/[id]]', err)
+    void logger.error('GET /api/projets/[id]', err, { route: 'GET /api/projets/[id]' })
     return internalError()
   }
 }
@@ -124,7 +125,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/projets/[id]]', err)
+    void logger.error('PATCH /api/projets/[id]', err, { route: 'PATCH /api/projets/[id]' })
     return internalError()
   }
 }
@@ -149,7 +150,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/projets/[id]]', err)
+    void logger.error('DELETE /api/projets/[id]', err, { route: 'DELETE /api/projets/[id]' })
     return internalError()
   }
 }

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request, { params }: { params: { projetId: string } }) {
   try {
@@ -156,7 +157,7 @@ export async function GET(req: Request, { params }: { params: { projetId: string
       equipes: grilleEquipes,
     })
   } catch (err) {
-    console.error('[GET /api/planning/[projetId]]', err)
+    void logger.error('GET /api/planning/[projetId]', err, { route: 'GET /api/planning/[projetId]' })
     return internalError()
   }
 }

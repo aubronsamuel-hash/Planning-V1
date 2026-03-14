@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { validationError, internalError } from '@/lib/api-response'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 function getToken(req: Request): string | null {
   const { searchParams } = new URL(req.url)
@@ -84,7 +85,7 @@ export async function GET(req: Request) {
       status: proposition.status,
     })
   } catch (err) {
-    console.error('[GET /api/remplacements/repondre]', err)
+    void logger.error('GET /api/remplacements/repondre', err, { route: 'GET /api/remplacements/repondre' })
     return internalError()
   }
 }
@@ -245,7 +246,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, status: parsed.data.action })
   } catch (err) {
-    console.error('[POST /api/remplacements/repondre]', err)
+    void logger.error('POST /api/remplacements/repondre', err, { route: 'POST /api/remplacements/repondre' })
     return internalError()
   }
 }

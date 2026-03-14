@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(
   req: Request,
@@ -130,7 +131,7 @@ export async function GET(
       })),
     })
   } catch (err) {
-    console.error('[GET /api/projets/[id]/representations/[repId]/feuille-de-route]', err)
+    void logger.error('GET /api/projets/[id]/representations/[repId]/feuille-de-route', err, { route: 'GET /api/projets/[id]/representations/[repId]/feuille-de-route' })
     return internalError()
   }
 }

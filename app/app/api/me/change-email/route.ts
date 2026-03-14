@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/auth'
 import { validationError, internalError } from '@/lib/api-response'
 import { sendEmail, emailChangeEmail } from '@/lib/email'
+import logger from '@/lib/logger'
 
 // ── Schéma de validation ───────────────────────────────────
 const ChangeEmailSchema = z.object({
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[POST /api/me/change-email]', err)
+    void logger.error('POST /api/me/change-email', err, { route: 'POST /api/me/change-email' })
     return internalError()
   }
 }

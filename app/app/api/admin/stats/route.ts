@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // MRR mensuel par plan (en centimes)
 const MRR_PAR_PLAN: Record<string, number> = {
@@ -108,7 +109,7 @@ export async function GET(_req: Request) {
       },
     })
   } catch (err) {
-    console.error('[GET /api/admin/stats]', err)
+    void logger.error('GET /api/admin/stats', err, { route: 'GET /api/admin/stats' })
     return internalError()
   }
 }

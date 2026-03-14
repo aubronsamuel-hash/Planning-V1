@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { eventBus } from '@/lib/event-bus'
+import logger from '@/lib/logger'
 
 const AnnulerTardiveSchema = z.object({
   raison: z.enum(['MALADIE', 'INDISPONIBILITE', 'AUTRE']).optional(),
@@ -142,7 +143,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       projetId: affectation.representation.projet.id,
     })
   } catch (err) {
-    console.error('[POST /api/affectations/[id]/annuler-tardive]', err)
+    void logger.error('POST /api/affectations/[id]/annuler-tardive', err, { route: 'POST /api/affectations/[id]/annuler-tardive' })
     return internalError()
   }
 }

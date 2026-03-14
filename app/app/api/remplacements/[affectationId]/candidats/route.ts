@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(
   req: Request,
@@ -214,7 +215,7 @@ export async function GET(
       candidats: sorted,
     })
   } catch (err) {
-    console.error('[GET /api/remplacements/[affectationId]/candidats]', err)
+    void logger.error('GET /api/remplacements/[affectationId]/candidats', err, { route: 'GET /api/remplacements/[affectationId]/candidats' })
     return internalError()
   }
 }

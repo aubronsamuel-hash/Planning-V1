@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, canVoirRH } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const PatchPreferencesTourneeSchema = z.object({
   preferenceChambre: z.enum(['SANS_PREFERENCE', 'INDIVIDUELLE', 'PARTAGEE_ACCEPTEE']).optional(),
@@ -86,7 +87,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/collaborateurs/[id]/preferences-tournee]', err)
+    void logger.error('PATCH /api/collaborateurs/[id]/preferences-tournee', err, { route: 'PATCH /api/collaborateurs/[id]/preferences-tournee' })
     return internalError()
   }
 }

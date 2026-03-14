@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError, validationError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const SuspendreSchema = z.object({
   raison: z.string().min(1, 'La raison est obligatoire').max(500),
@@ -66,7 +67,7 @@ export async function POST(
       suspendedReason: updated.suspendedReason,
     })
   } catch (err) {
-    console.error('[POST /api/admin/organisations/[id]/suspendre]', err)
+    void logger.error('POST /api/admin/organisations/[id]/suspendre', err, { route: 'POST /api/admin/organisations/[id]/suspendre' })
     return internalError()
   }
 }

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { requireOrgSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const Schema = z.object({
   city: z.string().max(100).optional(),
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[POST /api/onboarding/organisation]', err)
+    void logger.error('POST /api/onboarding/organisation', err, { route: 'POST /api/onboarding/organisation' })
     return internalError()
   }
 }

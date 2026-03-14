@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { sendEmail, magicLinkEmail } from '@/lib/email'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const SendMagicLinkSchema = z.object({
   email: z.string().email().toLowerCase(),
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
       message: 'Si un compte existe avec cet email, vous recevrez un lien de connexion.',
     })
   } catch (err) {
-    console.error('[POST /api/auth/magic-link/send]', err)
+    void logger.error('POST /api/auth/magic-link/send', err, { route: 'POST /api/auth/magic-link/send' })
     return internalError()
   }
 }

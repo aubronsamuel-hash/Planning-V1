@@ -9,6 +9,7 @@ import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError } from '@/lib/api-response'
 import { sendEmail, activationEmail, invitationMembreEmail } from '@/lib/email'
 import { canAddCollaborateur, quotaMessage } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const InviterSchema = z.object({
   email:        z.string().email(),
@@ -177,6 +178,14 @@ export async function POST(req: Request) {
       html: emailHtml,
     })
 
+    void logger.info('Collaborateur invité', {
+      route: 'POST /api/collaborateurs/inviter',
+      userId: session.user.id,
+      organizationId: session.user.organizationId!,
+      collaborateurId: collaborateur.id,
+      isNewUser,
+    })
+
     return NextResponse.json({
       userId: user.id,
       collaborateurId: collaborateur.id,
@@ -184,7 +193,7 @@ export async function POST(req: Request) {
       message: 'Invitation envoyée',
     }, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/collaborateurs/inviter]', err)
+    void logger.error('POST /api/collaborateurs/inviter', err, { route: 'POST /api/collaborateurs/inviter' })
     return internalError()
   }
 }

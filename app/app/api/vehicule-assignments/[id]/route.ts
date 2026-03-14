@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const PatchVehiculeAssignmentSchema = z.object({
   departLieu: z.string().max(300).nullable().optional(),
@@ -109,7 +110,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/vehicule-assignments/[id]]', err)
+    void logger.error('PATCH /api/vehicule-assignments/[id]', err, { route: 'PATCH /api/vehicule-assignments/[id]' })
     return internalError()
   }
 }

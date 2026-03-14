@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const CreateVehiculeSchema = z.object({
   label: z.string().min(1).max(100),
@@ -55,7 +56,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(vehicules)
   } catch (err) {
-    console.error('[GET /api/organisations/[id]/vehicules]', err)
+    void logger.error('GET /api/organisations/[id]/vehicules', err, { route: 'GET /api/organisations/[id]/vehicules' })
     return internalError()
   }
 }
@@ -118,7 +119,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(vehicule, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/organisations/[id]/vehicules]', err)
+    void logger.error('POST /api/organisations/[id]/vehicules', err, { route: 'POST /api/organisations/[id]/vehicules' })
     return internalError()
   }
 }

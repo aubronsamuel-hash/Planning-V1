@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { generateUniqueOrgSlug } from '@/lib/slug'
 import { sendEmail, magicLinkEmail } from '@/lib/email'
 import { validationError, internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const SignupSchema = z.object({
   firstName: z.string().min(1).max(50),
@@ -103,6 +104,8 @@ export async function POST(req: Request) {
       }),
     })
 
+    void logger.info('Nouveau compte créé', { route: 'POST /api/auth/signup', email })
+
     return NextResponse.json(
       {
         success: true,
@@ -112,7 +115,7 @@ export async function POST(req: Request) {
       { status: 201 }
     )
   } catch (err) {
-    console.error('[POST /api/auth/signup]', err)
+    void logger.error('POST /api/auth/signup', err, { route: 'POST /api/auth/signup' })
     return internalError()
   }
 }

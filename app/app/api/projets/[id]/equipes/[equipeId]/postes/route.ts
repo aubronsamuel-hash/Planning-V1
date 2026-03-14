@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const CreatePosteSchema = z.object({
   name: z.string().min(1).max(80),
@@ -39,7 +40,7 @@ export async function GET(req: Request, { params }: { params: { id: string; equi
 
     return NextResponse.json(postes)
   } catch (err) {
-    console.error('[GET /api/projets/[id]/equipes/[equipeId]/postes]', err)
+    void logger.error('GET /api/projets/[id]/equipes/[equipeId]/postes', err, { route: 'GET /api/projets/[id]/equipes/[equipeId]/postes' })
     return internalError()
   }
 }
@@ -81,7 +82,7 @@ export async function POST(req: Request, { params }: { params: { id: string; equ
 
     return NextResponse.json(poste, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/projets/[id]/equipes/[equipeId]/postes]', err)
+    void logger.error('POST /api/projets/[id]/equipes/[equipeId]/postes', err, { route: 'POST /api/projets/[id]/equipes/[equipeId]/postes' })
     return internalError()
   }
 }

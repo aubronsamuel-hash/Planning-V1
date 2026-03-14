@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { internalError } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request) {
   try {
@@ -114,7 +115,7 @@ export async function GET(req: Request) {
       affectations: formatted,
     })
   } catch (err) {
-    console.error('[GET /api/planning/view]', err)
+    void logger.error('GET /api/planning/view', err, { route: 'GET /api/planning/view' })
     return internalError()
   }
 }

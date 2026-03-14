@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { internalError, notFound, forbidden } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -127,7 +128,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       totalCachetsADecider,
     })
   } catch (err) {
-    console.error('[GET /api/projets/[id]/annulations]', err)
+    void logger.error('GET /api/projets/[id]/annulations', err, { route: 'GET /api/projets/[id]/annulations' })
     return internalError()
   }
 }

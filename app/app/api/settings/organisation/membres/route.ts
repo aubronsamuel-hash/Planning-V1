@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { internalError, notFound } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 // ── GET — Lister membres + invitations ────────────────────
 export async function GET(_req: Request) {
@@ -65,7 +66,7 @@ export async function GET(_req: Request) {
       total: result.length,
     })
   } catch (err) {
-    console.error('[GET /api/settings/organisation/membres]', err)
+    void logger.error('GET /api/settings/organisation/membres', err, { route: 'GET /api/settings/organisation/membres' })
     return internalError()
   }
 }

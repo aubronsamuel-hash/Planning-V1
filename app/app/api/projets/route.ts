@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, quotaExceeded, notFound } from '@/lib/api-response'
 import { canAddProjet, PLAN_LIMITS } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 // Palette fixe 12 couleurs — Règle #34
 const PALETTE_COLORS = [
@@ -112,7 +113,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(projetsEnrichis)
   } catch (err) {
-    console.error('[GET /api/projets]', err)
+    void logger.error('GET /api/projets', err, { route: 'GET /api/projets' })
     return internalError()
   }
 }
@@ -182,9 +183,17 @@ export async function POST(req: Request) {
       },
     })
 
+    void logger.info('Projet créé', {
+      route: 'POST /api/projets',
+      userId: session.user.id,
+      organizationId,
+      projetId: projet.id,
+      title,
+    })
+
     return NextResponse.json(projet, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/projets]', err)
+    void logger.error('POST /api/projets', err, { route: 'POST /api/projets' })
     return internalError()
   }
 }

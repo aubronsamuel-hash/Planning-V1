@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, conflict } from '@/lib/api-response'
+import logger from '@/lib/logger'
 
 const PatchPosteSchema = z.object({
   name: z.string().min(1).max(80).optional(),
@@ -52,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; eq
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/projets/[id]/equipes/[equipeId]/postes/[posteId]]', err)
+    void logger.error('PATCH /api/projets/[id]/equipes/[equipeId]/postes/[posteId]', err, { route: 'PATCH /api/projets/[id]/equipes/[equipeId]/postes/[posteId]' })
     return internalError()
   }
 }
@@ -93,7 +94,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string; e
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/projets/[id]/equipes/[equipeId]/postes/[posteId]]', err)
+    void logger.error('DELETE /api/projets/[id]/equipes/[equipeId]/postes/[posteId]', err, { route: 'DELETE /api/projets/[id]/equipes/[equipeId]/postes/[posteId]' })
     return internalError()
   }
 }

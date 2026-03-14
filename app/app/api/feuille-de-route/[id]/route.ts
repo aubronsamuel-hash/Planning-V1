@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import { broadcastNotification } from '@/lib/notifications.server'
+import logger from '@/lib/logger'
 
 const PatchFdrSchema = z.object({
   notesGenerales: z.string().max(2000).nullable().optional(),
@@ -45,7 +46,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     return NextResponse.json(fdr)
   } catch (err) {
-    console.error('[GET /api/feuille-de-route/[id]]', err)
+    void logger.error('GET /api/feuille-de-route/[id]', err, { route: 'GET /api/feuille-de-route/[id]' })
     return internalError()
   }
 }
@@ -93,7 +94,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/feuille-de-route/[id]]', err)
+    void logger.error('PATCH /api/feuille-de-route/[id]', err, { route: 'PATCH /api/feuille-de-route/[id]' })
     return internalError()
   }
 }

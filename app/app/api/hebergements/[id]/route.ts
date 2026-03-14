@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
 import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
+import logger from '@/lib/logger'
 
 const PatchHebergementSchema = z.object({
   nom: z.string().min(1).max(200).optional(),
@@ -71,7 +72,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json(updated)
   } catch (err) {
-    console.error('[PATCH /api/hebergements/[id]]', err)
+    void logger.error('PATCH /api/hebergements/[id]', err, { route: 'PATCH /api/hebergements/[id]' })
     return internalError()
   }
 }
@@ -101,7 +102,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[DELETE /api/hebergements/[id]]', err)
+    void logger.error('DELETE /api/hebergements/[id]', err, { route: 'DELETE /api/hebergements/[id]' })
     return internalError()
   }
 }
