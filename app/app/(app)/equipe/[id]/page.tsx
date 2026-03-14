@@ -7,7 +7,9 @@ import { redirect, notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { hasFeature } from '@/lib/plans'
 import Link from 'next/link'
+import PreferencesTourneeForm from './PreferencesTourneeForm'
 
 export default async function FicheCollaborateurPage({
   params,
@@ -17,11 +19,17 @@ export default async function FicheCollaborateurPage({
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const orgRole       = session.user.organizationRole
+  const orgRole        = session.user.organizationRole
   const organizationId = session.user.organizationId!
-  const canSeeRH      = orgRole === 'RH' || orgRole === 'DIRECTEUR'
+  const canSeeRH       = orgRole === 'RH' || orgRole === 'DIRECTEUR'
 
   if (orgRole === 'COLLABORATEUR') redirect('/dashboard')
+
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { plan: true },
+  })
+  const hasTourneeModule = org ? hasFeature(org.plan, 'moduleTournee') : false
 
   const collab = await prisma.collaborateur.findFirst({
     where: {
@@ -174,10 +182,10 @@ export default async function FicheCollaborateurPage({
                 🔒 Données RH
               </h3>
               <div className="space-y-2 text-sm">
-                {collab.numeroCongesSpectacles && (
+                {collab.congesSpectaclesNumber && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">N° Congés Spectacles</span>
-                    <span className="font-mono text-gray-900">{collab.numeroCongesSpectacles}</span>
+                    <span className="font-mono text-gray-900">{collab.congesSpectaclesNumber}</span>
                   </div>
                 )}
                 {collab.socialSecurityNumber && (
@@ -192,11 +200,26 @@ export default async function FicheCollaborateurPage({
                     <span className="font-mono text-gray-400">FR76 •••• ···{collab.iban.slice(-4)}</span>
                   </div>
                 )}
-                {!collab.socialSecurityNumber && !collab.iban && !collab.numeroCongesSpectacles && (
+                {!collab.socialSecurityNumber && !collab.iban && !collab.congesSpectaclesNumber && (
                   <p className="text-gray-400 text-xs italic">Aucune donnée RH saisie</p>
                 )}
               </div>
             </div>
+          )}
+
+          {/* Préférences tournée (ENTERPRISE + RH/Directeur seulement) */}
+          {canSeeRH && hasTourneeModule && (
+            <PreferencesTourneeForm
+              collaborateurId={collab.id}
+              initial={{
+                preferenceChambre: collab.preferenceChambre as 'SANS_PREFERENCE' | 'INDIVIDUELLE' | 'PARTAGEE_ACCEPTEE',
+                regimeAlimentaire: collab.regimeAlimentaire as 'STANDARD' | 'VEGETARIEN' | 'VEGAN' | 'SANS_PORC' | 'HALAL' | 'KASHER' | 'AUTRE',
+                allergies: collab.allergies,
+                permisConduire: collab.permisConduire,
+                permisCategorie: collab.permisCategorie,
+                notesTournee: collab.notesTournee,
+              }}
+            />
           )}
         </div>
 
