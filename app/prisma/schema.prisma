@@ -244,6 +244,7 @@ model Organization {
   projets       Projet[]
   templates     ProjetTemplate[]
   notifications Notification[]
+  vehicules     Vehicule[]
 }
 
 model User {
@@ -267,17 +268,19 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  memberships       OrganizationMembership[]
-  collaborateur     Collaborateur?
-  magicLinkTokens   MagicLinkToken[]
-  notifications     Notification[]
-  activityLogs      ActivityLog[]
-  projetsRegisseur  Projet[]         @relation("RegisseurProjet")
-  projetMembres     ProjetMembre[]
-  equipeMembres     EquipeMembre[]
-  documentsUploads  Document[]       @relation("UploadedBy")
-  feuillesDeRoute   FeuilleDeRoute[] @relation("CreatedBy")
-  templatesCreated  ProjetTemplate[] @relation("TemplateCreatedBy")
+  memberships          OrganizationMembership[]
+  collaborateur        Collaborateur?
+  magicLinkTokens      MagicLinkToken[]
+  notifications        Notification[]
+  activityLogs         ActivityLog[]
+  projetsRegisseur     Projet[]         @relation("RegisseurProjet")
+  projetMembres        ProjetMembre[]
+  equipeMembres        EquipeMembre[]
+  documentsUploads     Document[]       @relation("UploadedBy")
+  feuillesDeRoute      FeuilleDeRoute[] @relation("CreatedBy")
+  templatesCreated     ProjetTemplate[] @relation("TemplateCreatedBy")
+  hebergementsCreated  Hebergement[]    @relation("HebergementCreatedBy")
+  vehiculesConducteur  Vehicule[]       @relation("ConducteurHabituel")
 }
 
 // Accès temporaire sans mot de passe — système unifié pour tous les cas
@@ -342,6 +345,14 @@ model Collaborateur {
   yearsExperience    Int?
   availableForTour   Boolean  @default(false)
 
+  // Préférences tournée (§19.3) — visibles RH et Directeur uniquement
+  preferenceChambre  PreferenceChambre  @default(SANS_PREFERENCE)
+  regimeAlimentaire  RegimeAlimentaire  @default(STANDARD)
+  allergies          String?            // texte libre, ex: "gluten, lactose"
+  permisConduire     Boolean            @default(false)
+  permisCategorie    String?            // ex: "B", "BE", "C", "CE"
+  notesTournee       String?            // notes libres pour la logistique tournée
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -352,6 +363,8 @@ model Collaborateur {
   // prisma.document.findMany({ where: { entityType: 'COLLABORATEUR', entityId: collaborateur.id } })
   propositionsRecues     PropositionRemplacement[] @relation("Candidat")
   collaborateursSuggeres CollaborateurSuggere[]
+  chambresOccupant       ChambreOccupant[]
+  vehiculePassagers      VehiculePassager[]
 
   @@index([accountStatus])  // cron RGPD + queries "tous les GHOST/INACTIF" fréquentes
 }
@@ -379,6 +392,7 @@ model Projet {
   postesRequis    PosteRequis[]
   membres         ProjetMembre[]
   templates       ProjetTemplate[] @relation("SourceProjet")
+  hebergements    Hebergement[]
 
   @@index([organizationId])
   @@index([status])
@@ -419,11 +433,12 @@ model Representation {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  projet         Projet           @relation(fields: [projetId], references: [id], onDelete: Cascade)
-  affectations   Affectation[]
-  feuilleDeRoute FeuilleDeRoute?
-  reporteeVers   Representation?  @relation("Report", fields: [reporteeVersId], references: [id])
-  reporteeDe     Representation[] @relation("Report")
+  projet              Projet               @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  affectations        Affectation[]
+  feuilleDeRoute      FeuilleDeRoute?
+  reporteeVers        Representation?      @relation("Report", fields: [reporteeVersId], references: [id])
+  reporteeDe          Representation[]     @relation("Report")
+  vehiculeAssignments VehiculeAssignment[]
 
   @@index([projetId])
   @@index([date])
@@ -799,14 +814,150 @@ model PropositionRemplacement {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Module Tournée (§19 — 19-module-tournee.md)
+// Module Tournée (§19 — 19-module-tournee.md) — ENTERPRISE uniquement
 // ─────────────────────────────────────────────────────────────────────────────
-// Les modèles Hebergement, Chambre, ChambreOccupant, Vehicule, VehiculeAssignment, VehiculePassager
-// sont définis dans 19-module-tournee.md et à ajouter ici lors de l'implémentation du Module Tournée.
-//
-// ⚠️ Aussi ajouter lors de cette migration (champs sur modèle existant) :
-//   - Sur Collaborateur : preferenceChambre, regimeAlimentaire, allergies, permisConduire, permisCategorie
-//   - Enums correspondants : PreferenceChambre, RegimeAlimentaire (voir §19 pour les valeurs)
-//   - Relation : Vehicule.conducteurHabituelId → Collaborateur
-//
-// Voir §19 pour la spécification complète des modèles et leurs relations.
+
+enum PreferenceChambre {
+  SANS_PREFERENCE
+  INDIVIDUELLE
+  PARTAGEE_ACCEPTEE
+}
+
+enum RegimeAlimentaire {
+  STANDARD
+  VEGETARIEN
+  VEGAN
+  SANS_PORC
+  HALAL
+  KASHER
+  AUTRE
+}
+
+enum TypeVehicule {
+  CAMION
+  VAN
+  VOITURE
+  AUTRE
+}
+
+enum RoleVehiculePassager {
+  CONDUCTEUR
+  PASSAGER
+}
+
+// Hébergement — lié au projet (couvre N nuits pour N représentations)
+model Hebergement {
+  id                   String    @id @default(cuid())
+  projetId             String
+  nom                  String
+  adresse              String?
+  ville                String?
+  telephone            String?
+  email                String?   // adresse de l'hôtel pour la rooming list
+  checkIn              DateTime  @db.Date
+  checkOut             DateTime  @db.Date
+  notes                String?   // notes internes non envoyées à l'hôtel
+  roomingListEnvoyeeAt DateTime? // null = jamais envoyée
+  createdById          String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  projet    Projet     @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  createdBy User       @relation("HebergementCreatedBy", fields: [createdById], references: [id])
+  chambres  Chambre[]
+
+  @@index([projetId])
+}
+
+enum TypeChambre {
+  INDIVIDUELLE
+  DOUBLE
+  DOUBLE_USAGE_SIMPLE
+  SUITE
+}
+
+model Chambre {
+  id            String     @id @default(cuid())
+  hebergementId String
+  numero        String?    // ex: "101", "Suite A"
+  type          TypeChambre
+  notes         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  hebergement Hebergement      @relation(fields: [hebergementId], references: [id], onDelete: Cascade)
+  occupants   ChambreOccupant[]
+
+  @@index([hebergementId])
+}
+
+model ChambreOccupant {
+  id              String   @id @default(cuid())
+  chambreId       String
+  collaborateurId String
+  nuitDu          DateTime @db.Date // date de la nuit (ex: 2026-03-13 = nuit du 13 au 14)
+  notes           String?  // ex: "arrivée tardive prévue"
+
+  chambre       Chambre       @relation(fields: [chambreId], references: [id], onDelete: Cascade)
+  collaborateur Collaborateur @relation(fields: [collaborateurId], references: [id], onDelete: Cascade)
+
+  @@unique([chambreId, collaborateurId, nuitDu])
+  @@index([chambreId])
+  @@index([collaborateurId])
+}
+
+// Véhicule — flotte de l'organisation (niveau org, pas projet)
+model Vehicule {
+  id                    String      @id @default(cuid())
+  organizationId        String
+  label                 String      // ex: "Camion plateau", "Van 9 places"
+  type                  TypeVehicule
+  immatriculation       String?
+  capacitePersonnes     Int?
+  capaciteChargement    String?     // texte libre, ex: "3,5T"
+  conducteurHabituelId  String?     // userId du conducteur habituel
+  actif                 Boolean     @default(true) // false = archivé
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conducteurHabituel User?              @relation("ConducteurHabituel", fields: [conducteurHabituelId], references: [id])
+  assignations      VehiculeAssignment[]
+
+  @@index([organizationId])
+}
+
+// Assignation d'un véhicule à une représentation
+model VehiculeAssignment {
+  id                  String  @id @default(cuid())
+  vehiculeId          String
+  representationId    String
+  departLieu          String? // point de départ
+  departTime          String? // "HH:MM"
+  arriveeEstimeeTime  String? // "HH:MM"
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  vehicule       Vehicule           @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  representation Representation     @relation(fields: [representationId], references: [id], onDelete: Cascade)
+  passagers      VehiculePassager[]
+
+  @@unique([vehiculeId, representationId])
+  @@index([representationId])
+}
+
+// Passager dans un véhicule pour un trajet
+model VehiculePassager {
+  id                   String              @id @default(cuid())
+  vehiculeAssignmentId String
+  collaborateurId      String
+  role                 RoleVehiculePassager @default(PASSAGER)
+  // ⚠️ Un seul CONDUCTEUR par VehiculeAssignment — contrainte applicative
+
+  vehiculeAssignment VehiculeAssignment @relation(fields: [vehiculeAssignmentId], references: [id], onDelete: Cascade)
+  collaborateur      Collaborateur      @relation(fields: [collaborateurId], references: [id], onDelete: Cascade)
+
+  @@unique([vehiculeAssignmentId, collaborateurId])
+  @@index([vehiculeAssignmentId])
+}

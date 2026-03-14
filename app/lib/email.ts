@@ -494,6 +494,144 @@ export function rgpdWarningEmail({
   `, 'Votre compte sera supprimé dans 30 jours')
 }
 
+// ── 19.1.5 — Rooming List hôtel (Module Tournée) ─────────
+type ChambreEmail = {
+  numero?: string | null
+  type: string
+  occupants: {
+    nuitDu: Date
+    notes?: string | null
+    collaborateur: {
+      user: { firstName: string; lastName: string }
+      regimeAlimentaire: string
+      allergies?: string | null
+    }
+  }[]
+}
+
+export function roomingListEmail({
+  organisationNom,
+  projetTitre,
+  hebergementNom,
+  hebergementAdresse,
+  checkIn,
+  checkOut,
+  chambres,
+  regisseurNom,
+  regisseurEmail,
+}: {
+  organisationNom: string
+  projetTitre: string
+  hebergementNom: string
+  hebergementAdresse?: string | null
+  checkIn: Date
+  checkOut: Date
+  chambres: ChambreEmail[]
+  regisseurNom: string
+  regisseurEmail: string
+}): string {
+  const dateRangeStr = `${checkIn.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} – ${checkOut.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+
+  const typeChambreLabel: Record<string, string> = {
+    INDIVIDUELLE: 'Individuelle',
+    DOUBLE: 'Double',
+    DOUBLE_USAGE_SIMPLE: 'Double usage simple',
+    SUITE: 'Suite',
+  }
+  const regimeLabel: Record<string, string> = {
+    STANDARD: 'Standard',
+    VEGETARIEN: 'Végétarien',
+    VEGAN: 'Végétalien',
+    SANS_PORC: 'Sans porc',
+    HALAL: 'Halal',
+    KASHER: 'Kasher',
+    AUTRE: 'Régime spécial',
+  }
+
+  // Grouper occupants par chambre × nuit
+  const chambresRows = chambres.map(c => {
+    const nuitsMap = new Map<string, string[]>()
+    c.occupants.forEach(o => {
+      const key = o.nuitDu.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+      if (!nuitsMap.has(key)) nuitsMap.set(key, [])
+      nuitsMap.get(key)!.push(`${o.collaborateur.user.firstName} ${o.collaborateur.user.lastName}`)
+    })
+    const nuitsStr = Array.from(nuitsMap.entries())
+      .map(([date, noms]) => `${date} : ${noms.join(', ')}`)
+      .join(' · ')
+
+    const totalOccupants = new Set(c.occupants.map(o => `${o.collaborateur.user.firstName} ${o.collaborateur.user.lastName}`))
+    const nbAdultes = totalOccupants.size
+    const occupantsStr = Array.from(totalOccupants).join(' + ')
+
+    return `
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:10px 8px;font-weight:600;">${c.numero ?? '—'}</td>
+      <td style="padding:10px 8px;">${typeChambreLabel[c.type] ?? c.type}</td>
+      <td style="padding:10px 8px;">${occupantsStr} (${nbAdultes} adulte${nbAdultes > 1 ? 's' : ''})</td>
+      <td style="padding:10px 8px;color:#666;font-size:13px;">${nuitsStr}</td>
+    </tr>`
+  }).join('')
+
+  // Régimes spéciaux
+  const regimesSpeciaux: string[] = []
+  chambres.forEach(c => {
+    const seen = new Set<string>()
+    c.occupants.forEach(o => {
+      const nom = `${o.collaborateur.user.firstName} ${o.collaborateur.user.lastName}`
+      if (!seen.has(nom)) {
+        seen.add(nom)
+        const regime = o.collaborateur.regimeAlimentaire
+        const allergies = o.collaborateur.allergies
+        if (regime && regime !== 'STANDARD') {
+          regimesSpeciaux.push(`${nom} (${regimeLabel[regime] ?? regime}${allergies ? ` · ${allergies}` : ''})`)
+        } else if (allergies) {
+          regimesSpeciaux.push(`${nom} (allergies : ${allergies})`)
+        }
+      }
+    })
+  })
+
+  const regimesBlock = regimesSpeciaux.length > 0
+    ? `<p style="margin-top:20px;padding:12px 16px;background:#fefce8;border-left:4px solid #eab308;border-radius:4px;font-size:14px;">
+        <strong>Régimes alimentaires spéciaux :</strong><br>
+        ${regimesSpeciaux.join('<br>')}
+       </p>`
+    : ''
+
+  const totalChambres = chambres.length
+  const checkInFr = checkIn.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const checkOutFr = checkOut.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  return emailLayout(`
+    <h2 style="margin-top:0;color:#1a1a2e;">Rooming List — ${projetTitre}</h2>
+    <p>Bonjour,</p>
+    <p>Veuillez trouver ci-dessous la liste des chambres pour le groupe <strong>${organisationNom}</strong>, du ${dateRangeStr}.</p>
+    ${hebergementAdresse ? `<p style="color:#666;font-size:13px;">📍 ${hebergementAdresse}</p>` : ''}
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+      <thead>
+        <tr style="background:#f4f4f5;">
+          <th style="padding:10px 8px;text-align:left;">Chambre</th>
+          <th style="padding:10px 8px;text-align:left;">Type</th>
+          <th style="padding:10px 8px;text-align:left;">Occupant(s)</th>
+          <th style="padding:10px 8px;text-align:left;">Nuits</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${chambresRows}
+      </tbody>
+    </table>
+    <p style="font-size:14px;color:#374151;">
+      <strong>Total :</strong> ${totalChambres} chambre${totalChambres > 1 ? 's' : ''}<br>
+      <strong>Arrivée :</strong> ${checkInFr}<br>
+      <strong>Départ :</strong> ${checkOutFr}
+    </p>
+    ${regimesBlock}
+    <p style="margin-top:24px;font-size:14px;">Contact régisseur : <strong>${regisseurNom}</strong> — <a href="mailto:${regisseurEmail}" style="color:#6366F1;">${regisseurEmail}</a></p>
+    <p style="font-size:13px;color:#888;">Cordialement,<br>${organisationNom}</p>
+  `, `Rooming List — ${projetTitre} · ${dateRangeStr}`)
+}
+
 // ── 24.7.2 — DPAE envoyée ────────────────────────────────
 export function dpaeEnvoyeeEmail({
   rhPrenom,
