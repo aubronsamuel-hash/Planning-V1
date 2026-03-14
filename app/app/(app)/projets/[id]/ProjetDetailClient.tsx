@@ -10,6 +10,7 @@ import { OngletResume } from './onglets/OngletResume'
 import { OngletRepresentations } from './onglets/OngletRepresentations'
 import { OngletEquipePostes } from './onglets/OngletEquipePostes'
 import { OngletPlanning } from './onglets/OngletPlanning'
+import { OngletTournee } from './onglets/OngletTournee'
 
 // ── Types partagés ─────────────────────────────────────────
 export type ProjetDetail = {
@@ -99,15 +100,17 @@ type Props = {
   collaborateurs: Collaborateur[]
   canEdit: boolean
   canSeeRH: boolean
+  organisationPlan: string
 }
 
-type OngletId = 'resume' | 'representations' | 'equipe' | 'planning'
+type OngletId = 'resume' | 'representations' | 'equipe' | 'planning' | 'tournee'
 
 const ONGLETS: Array<{ id: OngletId; label: string }> = [
   { id: 'resume', label: 'Résumé' },
   { id: 'representations', label: 'Représentations' },
   { id: 'equipe', label: 'Équipe & Postes' },
   { id: 'planning', label: 'Planning' },
+  { id: 'tournee', label: 'Tournée' },
 ]
 
 const TYPE_LABELS: Record<string, string> = {
@@ -146,6 +149,7 @@ export function ProjetDetailClient({
   collaborateurs,
   canEdit,
   canSeeRH,
+  organisationPlan,
 }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -315,6 +319,15 @@ export function ProjetDetailClient({
             equipes={localEquipes}
             collaborateurs={collaborateurs}
             canEdit={canEdit}
+          />
+        )}
+        {ongletActif === 'tournee' && (
+          <OngletTournee
+            projetId={projet.id}
+            organisationId={projet.organizationId}
+            organisationPlan={organisationPlan}
+            canEdit={canEdit}
+            canSeeRH={canSeeRH}
           />
         )}
       </div>

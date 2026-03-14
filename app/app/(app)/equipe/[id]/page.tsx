@@ -9,7 +9,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { hasFeature } from '@/lib/plans'
 import Link from 'next/link'
-import PreferencesTourneeForm from './PreferencesTourneeForm'
+import { PreferencesTourneeSection } from './PreferencesTourneeSection'
 
 export default async function FicheCollaborateurPage({
   params,
@@ -25,11 +25,8 @@ export default async function FicheCollaborateurPage({
 
   if (orgRole === 'COLLABORATEUR') redirect('/dashboard')
 
-  const org = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { plan: true },
-  })
-  const hasTourneeModule = org ? hasFeature(org.plan, 'moduleTournee') : false
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { plan: true } })
+  const hasTournee = org ? hasFeature(org.plan, 'moduleTournee') : false
 
   const collab = await prisma.collaborateur.findFirst({
     where: {
@@ -207,17 +204,16 @@ export default async function FicheCollaborateurPage({
             </div>
           )}
 
-          {/* Préférences tournée (ENTERPRISE + RH/Directeur seulement) */}
-          {canSeeRH && hasTourneeModule && (
-            <PreferencesTourneeForm
+          {/* Préférences tournée (RH / Directeur + plan ENTERPRISE) */}
+          {canSeeRH && hasTournee && (
+            <PreferencesTourneeSection
               collaborateurId={collab.id}
               initial={{
-                preferenceChambre: collab.preferenceChambre as 'SANS_PREFERENCE' | 'INDIVIDUELLE' | 'PARTAGEE_ACCEPTEE',
-                regimeAlimentaire: collab.regimeAlimentaire as 'STANDARD' | 'VEGETARIEN' | 'VEGAN' | 'SANS_PORC' | 'HALAL' | 'KASHER' | 'AUTRE',
+                preferenceChambre: collab.preferenceChambre,
+                regimeAlimentaire: collab.regimeAlimentaire,
                 allergies: collab.allergies,
                 permisConduire: collab.permisConduire,
                 permisCategorie: collab.permisCategorie,
-                notesTournee: collab.notesTournee,
               }}
             />
           )}

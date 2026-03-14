@@ -1,28 +1,71 @@
 // ─────────────────────────────────────────────────────────
-// POST /api/representations/[id]/transport — Assigner un véhicule à une représentation
-// doc/19-module-tournee.md §19.2 — ENTERPRISE uniquement
+// GET  /api/representations/[id]/transport — Assignations transport
+// POST /api/representations/[id]/transport — Assigner un véhicule
+// doc/19-module-tournee.md §19.2
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
-import { validationError, internalError, notFound, forbidden, conflict } from '@/lib/api-response'
+import { conflict, forbidden, internalError, notFound, validationError } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
-import logger from '@/lib/logger'
 
-const CreateVehiculeAssignmentSchema = z.object({
-  vehiculeId: z.string().cuid(),
-  departLieu: z.string().max(300).optional(),
-  departTime: z.string().regex(/^\d{2}:\d{2}$/).optional(), // "HH:MM"
-  arriveeEstimeeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  notes: z.string().max(1000).optional(),
-  // Passagers (conducteur + passagers)
-  passagers: z.array(z.object({
-    collaborateurId: z.string().cuid(),
-    role: z.enum(['CONDUCTEUR', 'PASSAGER']),
-  })).optional(),
+const PassagerSchema = z.object({
+  collaborateurId: z.string(),
+  role: z.enum(['CONDUCTEUR', 'PASSAGER']),
 })
 
+const CreateTransportSchema = z.object({
+  vehiculeId: z.string(),
+  departLieu: z.string().max(200).optional(),
+  departTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  arriveeEstimeeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  notes: z.string().max(500).optional(),
+  passagers: z.array(PassagerSchema),
+})
+
+// ── GET ────────────────────────────────────────────────────
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  try {
+    const { session, error } = await requireOrgSession()
+    if (error) return error
+
+    const representation = await prisma.representation.findFirst({
+      where: { id: params.id },
+      include: { projet: { include: { organization: { select: { plan: true } } } } },
+    })
+    if (!representation) return notFound('Représentation')
+
+    const ownershipError = verifyOwnership(representation.projet.organizationId, session.user.organizationId!)
+    if (ownershipError) return ownershipError
+
+    if (!hasFeature(representation.projet.organization.plan, 'moduleTournee')) {
+      return forbidden('Module Tournée disponible sur le plan ENTERPRISE uniquement')
+    }
+
+    const assignments = await prisma.vehiculeAssignment.findMany({
+      where: { representationId: params.id },
+      include: {
+        vehicule: { select: { id: true, label: true, type: true, capacitePersonnes: true } },
+        passagers: {
+          include: {
+            collaborateur: {
+              include: { user: { select: { id: true, firstName: true, lastName: true, phone: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { departTime: 'asc' },
+    })
+
+    return NextResponse.json(assignments)
+  } catch (err) {
+    console.error('[GET /api/representations/[id]/transport]', err)
+    return internalError()
+  }
+}
+
+// ── POST ───────────────────────────────────────────────────
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const { session, error } = await requireOrgSession({ minRole: 'REGISSEUR', write: true })
@@ -30,61 +73,33 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const representation = await prisma.representation.findFirst({
       where: { id: params.id },
-      include: { projet: { select: { organizationId: true } } },
+      include: { projet: { include: { organization: { select: { plan: true } } } } },
     })
     if (!representation) return notFound('Représentation')
 
     const ownershipError = verifyOwnership(representation.projet.organizationId, session.user.organizationId!)
     if (ownershipError) return ownershipError
 
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId! },
-      select: { plan: true },
-    })
-    if (!org || !hasFeature(org.plan, 'moduleTournee')) {
-      return forbidden('Le module Tournée est réservé au plan ENTERPRISE. Passez sur /settings/organisation#facturation')
+    if (!hasFeature(representation.projet.organization.plan, 'moduleTournee')) {
+      return forbidden('Module Tournée disponible sur le plan ENTERPRISE uniquement — /settings/organisation#facturation')
     }
 
     const body = await req.json()
-    const parsed = CreateVehiculeAssignmentSchema.safeParse(body)
+    const parsed = CreateTransportSchema.safeParse(body)
     if (!parsed.success) return validationError(parsed.error.flatten())
 
     const { vehiculeId, departLieu, departTime, arriveeEstimeeTime, notes, passagers } = parsed.data
 
-    // Vérifier que le véhicule appartient bien à l'organisation
-    const vehicule = await prisma.vehicule.findUnique({ where: { id: vehiculeId } })
-    if (!vehicule || vehicule.organizationId !== session.user.organizationId!) {
-      return notFound('Véhicule')
-    }
-    if (!vehicule.actif) {
-      return forbidden('Ce véhicule est archivé et ne peut plus être assigné')
-    }
-
-    // Vérifier qu'il n'y a pas déjà une assignation pour ce véhicule + représentation
-    const existingAssignment = await prisma.vehiculeAssignment.findUnique({
-      where: { vehiculeId_representationId: { vehiculeId, representationId: params.id } },
+    // Vérifier que le véhicule appartient à la même organisation
+    const vehicule = await prisma.vehicule.findFirst({
+      where: { id: vehiculeId, organizationId: session.user.organizationId!, actif: true },
     })
-    if (existingAssignment) {
-      return conflict('Ce véhicule est déjà assigné à cette représentation')
-    }
+    if (!vehicule) return notFound('Véhicule')
 
-    // Vérifier un seul conducteur parmi les passagers
-    if (passagers) {
-      const conducteurs = passagers.filter(p => p.role === 'CONDUCTEUR')
-      if (conducteurs.length > 1) {
-        return NextResponse.json(
-          { error: 'Un seul conducteur est autorisé par véhicule', code: 'VALIDATION_ERROR' },
-          { status: 422 }
-        )
-      }
-
-      // Vérifier la capacité
-      if (vehicule.capacitePersonnes && passagers.length > vehicule.capacitePersonnes) {
-        return NextResponse.json(
-          { error: `Capacité dépassée : ${vehicule.capacitePersonnes} places maximum`, code: 'VALIDATION_ERROR' },
-          { status: 422 }
-        )
-      }
+    // Contrainte : un seul CONDUCTEUR par VehiculeAssignment
+    const conducteurs = passagers.filter((p) => p.role === 'CONDUCTEUR')
+    if (conducteurs.length > 1) {
+      return conflict('Un seul conducteur autorisé par véhicule et représentation')
     }
 
     const assignment = await prisma.vehiculeAssignment.create({
@@ -95,21 +110,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         departTime,
         arriveeEstimeeTime,
         notes,
-        ...(passagers && passagers.length > 0 ? {
-          passagers: {
-            create: passagers.map(p => ({
-              collaborateurId: p.collaborateurId,
-              role: p.role,
-            })),
-          },
-        } : {}),
+        passagers: {
+          create: passagers.map((p) => ({
+            collaborateurId: p.collaborateurId,
+            role: p.role,
+          })),
+        },
       },
       include: {
         vehicule: { select: { id: true, label: true, type: true, capacitePersonnes: true } },
         passagers: {
           include: {
             collaborateur: {
-              include: { user: { select: { id: true, firstName: true, lastName: true } } },
+              include: { user: { select: { id: true, firstName: true, lastName: true, phone: true } } },
             },
           },
         },
@@ -118,7 +131,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(assignment, { status: 201 })
   } catch (err) {
-    void logger.error('POST /api/representations/[id]/transport', err, { route: 'POST /api/representations/[id]/transport' })
+    console.error('[POST /api/representations/[id]/transport]', err)
     return internalError()
   }
 }

@@ -20,6 +20,8 @@ export default async function ProjetDetailPage({ params }: Params) {
   const canEdit = orgRole === 'DIRECTEUR' || orgRole === 'REGISSEUR'
   const canSeeRH = orgRole === 'DIRECTEUR' || orgRole === 'RH'
 
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { plan: true } })
+
   const projet = await prisma.projet.findFirst({
     where: { id: params.id, organizationId: orgId },
     include: {
@@ -194,6 +196,7 @@ export default async function ProjetDetailPage({ params }: Params) {
       }))}
       canEdit={canEdit}
       canSeeRH={canSeeRH}
+      organisationPlan={org?.plan ?? 'FREE'}
     />
   )
 }
