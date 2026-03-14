@@ -1,9 +1,8 @@
 // ─────────────────────────────────────────────────────────
 // /admin — Dashboard back-office SUPER_ADMIN
-// Layout séparé du layout (app) — pas de sidebar standard
-// doc/23-architecture-technique.md §23.1
+// Layout géré par app/admin/layout.tsx
+// doc/17-back-office-super-admin.md §17.3
 // ─────────────────────────────────────────────────────────
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
@@ -50,18 +49,8 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const ADMIN_NAV = [
-  { href: '/admin', label: 'Dashboard', icon: '&#x1F4CA;' },
-  { href: '/admin/organisations', label: 'Organisations', icon: '&#x1F3E2;' },
-  { href: '/admin/admins', label: 'Admins', icon: '&#x1F464;' },
-  { href: '/admin/logs', label: 'Logs', icon: '&#x1F4CB;' },
-]
-
 export default async function AdminDashboardPage() {
   const session = await getServerSession(authOptions)
-
-  if (!session) redirect('/login')
-  if (session.user.role !== 'SUPER_ADMIN') redirect('/dashboard')
 
   // Fetch stats côté serveur
   let stats: AdminStats | null = null
@@ -89,43 +78,12 @@ export default async function AdminDashboardPage() {
   const totalPlanOrgs = Object.values(orgsByPlan).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar admin */}
-      <aside className="w-56 bg-gray-900 flex flex-col flex-shrink-0">
-        <div className="px-5 py-5 border-b border-gray-700">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Back-office</p>
-          <p className="text-sm font-semibold text-white truncate">{session.user.email}</p>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {ADMIN_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-            >
-              <span dangerouslySetInnerHTML={{ __html: item.icon }} />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="px-5 py-4 border-t border-gray-700">
-          <Link
-            href="/dashboard"
-            className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
-          >
-            Retour au SaaS &rarr;
-          </Link>
-        </div>
-      </aside>
+    <>
+      <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
+        <h1 className="text-lg font-semibold text-gray-900">Dashboard administration</h1>
+      </header>
 
-      {/* Contenu principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
-          <h1 className="text-lg font-semibold text-gray-900">Dashboard administration</h1>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6">
           {statsError && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
               <p className="text-sm text-red-700">
@@ -300,8 +258,7 @@ export default async function AdminDashboardPage() {
               <p className="text-sm text-gray-400">Chargement des statistiques…</p>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+      </main>
+    </>
   )
 }

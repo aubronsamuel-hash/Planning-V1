@@ -5,16 +5,24 @@
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError, validationError, notFound } from '@/lib/api-response'
 import type { OrganizationPlan } from '@prisma/client'
 import logger from '@/lib/logger'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let stripe: any = null
+async function getStripe() {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Stripe = require('stripe')
+      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' })
+    } catch { /* stripe not installed */ }
+  }
+  return stripe
+}
 
 // Prix Stripe par plan (en centimes)
 const STRIPE_PRICE_IDS: Partial<Record<OrganizationPlan, string>> = {
@@ -45,7 +53,7 @@ export async function PATCH(
 
     // Charger l'organisation
     const org = await prisma.organization.findUnique({
-      where: { id, deletedAt: null },
+      where: { id },
       select: {
         id: true,
         plan: true,
@@ -58,13 +66,14 @@ export async function PATCH(
     if (!org) return notFound('Organisation')
 
     const ancienPlan = org.plan
-    const nbCollabs = org.memberships
+    const nbCollabs = org._count.memberships
 
     // ── CAS A : Stripe actif ────────────────────────────────
-    if (org.stripeCustomerId) {
+    const stripeClient = await getStripe()
+    if (org.stripeCustomerId && stripeClient) {
       try {
         // Récupérer l'abonnement actif
-        const subscriptions = await stripe.subscriptions.list({
+        const subscriptions = await stripeClient.subscriptions.list({
           customer: org.stripeCustomerId,
           status: 'active',
           limit: 1,
@@ -75,7 +84,7 @@ export async function PATCH(
 
           if (newPlan === 'FREE') {
             // Annuler l'abonnement Stripe
-            await stripe.subscriptions.cancel(subscription.id)
+            await stripeClient.subscriptions.cancel(subscription.id)
           } else {
             // Mettre à jour le price
             const newPriceId = STRIPE_PRICE_IDS[newPlan as keyof typeof STRIPE_PRICE_IDS]
@@ -85,7 +94,7 @@ export async function PATCH(
                 { status: 500 }
               )
             }
-            await stripe.subscriptions.update(subscription.id, {
+            await stripeClient.subscriptions.update(subscription.id, {
               items: [
                 {
                   id: subscription.items.data[0].id,

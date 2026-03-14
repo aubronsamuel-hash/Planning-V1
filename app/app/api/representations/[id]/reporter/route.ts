@@ -1,25 +1,19 @@
 // ─────────────────────────────────────────────────────────
 // PATCH /api/representations/[id]/reporter
-// Reporte une représentation vers une nouvelle date
-// Options :
-//   - maintenir: true  → affectations conservées, reconfirmation pour les intermittents
-//   - maintenir: false → affectations annulées, repartir de zéro
-// doc §12.4 — Annulations & Reports (Règle #25)
+// Reporte une représentation à une nouvelle date
+// doc/12-annulations-reports.md §12.4
+// Accès : REGISSEUR minimum
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
-import { validationError, internalError, notFound, conflict } from '@/lib/api-response'
-import { detectConflict } from '@/lib/conflicts'
+import { validationError, internalError, notFound } from '@/lib/api-response'
 import { eventBus } from '@/lib/event-bus'
-import logger from '@/lib/logger'
 
 const ReporterSchema = z.object({
-  nouvelleDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD requis'),
-  maintenir: z.boolean(), // true = maintenir les affectations, false = repartir de zéro
-  // Si conflits détectés et maintenir=true, on peut forcer le maintien malgré conflits
-  forcerMaintienEnConflits: z.boolean().optional(),
+  nouvelleDate:    z.string().min(1), // ISO date string
+  maintienAffectations: z.boolean(),
 })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -27,20 +21,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const { session, error } = await requireOrgSession({ minRole: 'REGISSEUR', write: true })
     if (error) return error
 
-    const rep = await prisma.representation.findFirst({
+    const representation = await prisma.representation.findFirst({
       where: { id: params.id, deletedAt: null },
       include: {
         projet: { select: { id: true, organizationId: true, title: true } },
         affectations: {
-          where: {
-            deletedAt: null,
-            confirmationStatus: { notIn: ['ANNULEE', 'ANNULEE_TARDIVE'] },
-          },
+          where: { deletedAt: null },
           include: {
             collaborateur: {
-              include: {
-                user: { select: { id: true, firstName: true, lastName: true, email: true } },
-              },
+              include: { user: { select: { id: true, firstName: true, lastName: true } } },
             },
             posteRequis: { select: { name: true } },
           },
@@ -48,227 +37,143 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     })
 
-    if (!rep) return notFound('Représentation')
+    if (!representation) return notFound('Représentation')
 
-    const ownershipError = verifyOwnership(rep.projet.organizationId, session.user.organizationId!)
+    const ownershipError = verifyOwnership(
+      representation.projet.organizationId,
+      session.user.organizationId!
+    )
     if (ownershipError) return ownershipError
 
-    if (rep.status === 'ANNULEE' || rep.status === 'REPORTEE') {
-      return conflict(`Cette représentation est déjà ${rep.status === 'REPORTEE' ? 'reportée' : 'annulée'}.`)
+    if (representation.status === 'ANNULEE') {
+      return NextResponse.json({ error: 'Une représentation annulée ne peut pas être reportée.' }, { status: 400 })
     }
 
-    const body = await req.json()
+    const body   = await req.json()
     const parsed = ReporterSchema.safeParse(body)
     if (!parsed.success) return validationError(parsed.error.flatten())
 
-    const { nouvelleDate, maintenir, forcerMaintienEnConflits } = parsed.data
-    const maintenant = new Date()
+    const { nouvelleDate, maintienAffectations } = parsed.data
 
-    // Détecter les conflits si on maintient les affectations
-    type ConflitCollab = { affectationId: string; collaborateurNom: string; conflitAvec: string }
-    let conflitsDetectes: ConflitCollab[] = []
-
-    if (maintenir && rep.affectations.length > 0) {
-      const nouvelleDateObj = new Date(nouvelleDate)
-
-      for (const aff of rep.affectations) {
-        const startTime = rep.showStartTime ?? '00:00'
-        const endTime = rep.showEndTime ?? '23:59'
-
-        const result = await detectConflict(
-          aff.collaborateurId,
-          nouvelleDateObj,
-          startTime,
-          endTime,
-          aff.id // exclure l'affectation courante
-        )
-
-        if (result.hasConflict) {
-          conflitsDetectes.push({
-            affectationId: aff.id,
-            collaborateurNom: `${aff.collaborateur.user.firstName} ${aff.collaborateur.user.lastName}`,
-            conflitAvec: result.conflictingRepresentation ?? 'autre représentation',
-          })
-        }
-      }
-
-      // Si conflits et pas de forçage → retourner les conflits pour que le front affiche la boite de dialogue
-      if (conflitsDetectes.length > 0 && !forcerMaintienEnConflits) {
-        return NextResponse.json(
-          {
-            code: 'CONFLITS_DETECTES',
-            conflits: conflitsDetectes,
-            message: `${conflitsDetectes.length} collaborateur(s) ont un conflit sur la nouvelle date.`,
-          },
-          { status: 409 }
-        )
-      }
-    }
-
-    // IDs des affectations en conflit à exclure si forcerMaintienEnConflits = false
-    // (dans ce chemin on a forcerMaintienEnConflits = true donc on maintient tout)
-    const affectationsIdsEnConflits = new Set(conflitsDetectes.map((c) => c.affectationId))
-
-    let nouvelleRepId: string | undefined
+    let nouvelleRepId = ''
 
     await prisma.$transaction(async (tx) => {
       // Créer la nouvelle représentation
       const nouvelleRep = await tx.representation.create({
         data: {
-          projetId: rep.projetId,
-          date: new Date(nouvelleDate),
-          type: rep.type,
-          status: 'PLANIFIEE',
-          getInTime: rep.getInTime,
-          warmupTime: rep.warmupTime,
-          showStartTime: rep.showStartTime,
-          showEndTime: rep.showEndTime,
-          getOutTime: rep.getOutTime,
-          venueName: rep.venueName,
-          venueCity: rep.venueCity,
-          venueAddress: rep.venueAddress,
-          notes: rep.notes,
+          projetId:       representation.projetId,
+          date:           new Date(nouvelleDate),
+          showStartTime:  representation.showStartTime,
+          showEndTime:    representation.showEndTime,
+          getInTime:      representation.getInTime,
+          getOutTime:     representation.getOutTime,
+          type:           representation.type,
+          status:         'PLANIFIEE',
         },
       })
       nouvelleRepId = nouvelleRep.id
 
-      // Marquer l'ancienne représentation comme reportée
+      // Marquer l'ancienne comme REPORTEE
       await tx.representation.update({
         where: { id: params.id },
         data: {
-          status: 'REPORTEE',
-          annulationAt: maintenant,
-          reporteeVersId: nouvelleRep.id,
+          status:           'REPORTEE',
+          reporteeVersId:   nouvelleRep.id,
+          annulationAt:     new Date(),
         },
       })
 
-      if (!maintenir) {
-        // Option B : annuler toutes les affectations
-        await tx.affectation.updateMany({
-          where: {
-            representationId: params.id,
-            deletedAt: null,
-            confirmationStatus: { notIn: ['ANNULEE', 'ANNULEE_TARDIVE'] },
-          },
-          data: {
-            confirmationStatus: 'ANNULEE',
-            annulationDate: maintenant,
-          },
-        })
+      if (maintienAffectations) {
+        // Maintenir les affectations : recréer sur la nouvelle date, reset confirmation pour intermittents
+        for (const aff of representation.affectations) {
+          const nouvelleConfirmation =
+            aff.confirmationStatus === 'NON_REQUISE' ? 'NON_REQUISE' : 'EN_ATTENTE'
 
-        // Notifier les collaborateurs
-        for (const aff of rep.affectations) {
+          await tx.affectation.create({
+            data: {
+              representationId:   nouvelleRep.id,
+              collaborateurId:    aff.collaborateurId,
+              posteRequisId:      aff.posteRequisId,
+              confirmationStatus: nouvelleConfirmation,
+              contractTypeUsed:   aff.contractTypeUsed,
+              remuneration:       aff.remuneration,
+              startTime:          aff.startTime,
+              endTime:            aff.endTime,
+              dpaeStatus:         'A_FAIRE',
+            },
+          })
+
+          // Notifier le collaborateur
+          const msgBase = `${representation.projet.title} est reportée au ${new Date(nouvelleDate).toLocaleDateString('fr-FR')}.`
+          const msg = nouvelleConfirmation === 'NON_REQUISE'
+            ? `${msgBase} Votre présence est maintenue.`
+            : `${msgBase} Merci de reconfirmer votre présence.`
+
           await tx.notification.create({
             data: {
-              userId: aff.collaborateur.user.id,
+              userId:         aff.collaborateur.user.id,
               organizationId: session.user.organizationId!,
-              type: 'AFFECTATION_ANNULEE',
-              priority: 'URGENT',
-              title: `🔄 ${rep.projet.title} reportée — affectation annulée`,
-              body: `${rep.projet.title} a été reportée au ${new Date(nouvelleDate).toLocaleDateString('fr-FR')}. Votre affectation n'a pas été maintenue.`,
-              link: '/mon-planning',
-              relatedId: params.id,
-              relatedType: 'representation',
+              type:           'REPRESENTATION_REPORTEE',
+              priority:       'URGENT',
+              title:          'Représentation reportée',
+              body:           msg,
+              link:           '/mon-planning',
+              actionLabel:    nouvelleConfirmation === 'EN_ATTENTE' ? 'Reconfirmer' : null,
             },
           })
         }
       } else {
-        // Option A : maintenir les affectations sur la nouvelle date
-        for (const aff of rep.affectations) {
-          const estEnConflitNonForce = affectationsIdsEnConflits.has(aff.id) && !forcerMaintienEnConflits
-
-          if (estEnConflitNonForce) continue // exclure si conflit non résolu (ne devrait pas arriver ici)
-
-          const estIntermittent = aff.confirmationStatus !== 'NON_REQUISE'
-          const nouvelleAff = await tx.affectation.create({
-            data: {
-              representationId: nouvelleRep.id,
-              collaborateurId: aff.collaborateurId,
-              posteRequisId: aff.posteRequisId,
-              startTime: aff.startTime,
-              endTime: aff.endTime,
-              cachet: aff.cachet,
-              // Intermittents → EN_ATTENTE, CDI/CDD → NON_REQUISE
-              confirmationStatus: estIntermittent ? 'EN_ATTENTE' : 'NON_REQUISE',
-              // Marquer le conflit si présent (non bloquant — Règle #22)
-              hasConflict: affectationsIdsEnConflits.has(aff.id),
-            },
-          })
-
-          // Annuler l'ancienne affectation
+        // Repartir de zéro : annuler toutes les affectations de l'ancienne date
+        for (const aff of representation.affectations) {
           await tx.affectation.update({
             where: { id: aff.id },
             data: {
               confirmationStatus: 'ANNULEE',
-              annulationDate: maintenant,
+              annulationDate:     new Date(),
+              annulationRaison:   'Représentation reportée',
             },
           })
 
-          // Notification selon type de contrat
-          if (estIntermittent) {
-            await tx.notification.create({
-              data: {
-                userId: aff.collaborateur.user.id,
-                organizationId: session.user.organizationId!,
-                type: 'CONFIRMATION_REQUISE',
-                priority: 'URGENT',
-                title: `🔄 ${rep.projet.title} reportée au ${new Date(nouvelleDate).toLocaleDateString('fr-FR')}`,
-                body: 'Merci de reconfirmer votre présence pour la nouvelle date.',
-                link: `/mon-planning`,
-                relatedId: nouvelleAff.id,
-                relatedType: 'affectation',
-              },
-            })
-          } else {
-            // CDI/CDD : notification informative
-            await tx.notification.create({
-              data: {
-                userId: aff.collaborateur.user.id,
-                organizationId: session.user.organizationId!,
-                type: 'AFFECTATION_CREEE',
-                priority: 'INFO',
-                title: `🔄 ${rep.projet.title} reportée au ${new Date(nouvelleDate).toLocaleDateString('fr-FR')}`,
-                body: 'Votre présence est maintenue sur la nouvelle date.',
-                link: '/mon-planning',
-                relatedId: nouvelleAff.id,
-                relatedType: 'affectation',
-              },
-            })
-          }
+          await tx.notification.create({
+            data: {
+              userId:         aff.collaborateur.user.id,
+              organizationId: session.user.organizationId!,
+              type:           'REPRESENTATION_REPORTEE',
+              priority:       'URGENT',
+              title:          'Représentation reportée',
+              body:           `${representation.projet.title} a été reportée. Votre affectation ne sera pas maintenue sur la nouvelle date.`,
+              link:           '/mon-planning',
+            },
+          })
         }
       }
 
       await tx.activityLog.create({
         data: {
-          userId: session.user.id,
-          action: 'REPRESENTATION_REPORTEE',
-          entityType: 'Representation',
-          entityId: params.id,
+          userId:     session.user.id,
+          action:     'REPRESENTATION_REPORTEE',
+          entityType:     'Representation',
+          entityId:       params.id,
           metadata: {
-            ancienneDate: rep.date,
-            nouvelleDate,
+            ancienneDate:         representation.date,
+            nouvelleDate:         new Date(nouvelleDate),
             nouvelleRepresentationId: nouvelleRep.id,
-            maintenir,
-            nbAffectations: rep.affectations.length,
-            nbConflits: conflitsDetectes.length,
+            maintienAffectations,
+            nbAffectations:       representation.affectations.length,
+            projetTitre:          representation.projet.title,
           },
         },
       })
     })
 
-    eventBus.emit(`planning:${rep.projet.id}`, {
-      type: 'representation_reportee',
+    eventBus.emit(`planning:${representation.projet.id}`, {
+      type:    'representation_reportee',
       payload: { ancienneRepId: params.id, nouvelleRepId },
     })
 
-    return NextResponse.json({
-      success: true,
-      nouvelleRepresentationId: nouvelleRepId,
-      nbAffectationsMaintenues: maintenir ? rep.affectations.length - (forcerMaintienEnConflits ? 0 : affectationsIdsEnConflits.size) : 0,
-      nbConflits: conflitsDetectes.length,
-    })
+    return NextResponse.json({ success: true, nouvelleRepresentationId: nouvelleRepId! })
   } catch (err) {
-    void logger.error('PATCH /api/representations/[id]/reporter', err, { route: 'PATCH /api/representations/[id]/reporter' })
+    console.error('[PATCH /api/representations/[id]/reporter]', err)
     return internalError()
   }
 }

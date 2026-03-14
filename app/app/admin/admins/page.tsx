@@ -1,182 +1,153 @@
+'use client'
 // ─────────────────────────────────────────────────────────
-// /admin/admins — Gestion des super-admins (back-office)
-// doc/17-back-office-super-admin.md
+// /admin/admins — Gestion des Super Admins
+// doc/17-back-office-super-admin.md §17.6
 // ─────────────────────────────────────────────────────────
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+import { useState, useEffect, useCallback } from 'react'
 
-const ADMIN_NAV = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/organisations', label: 'Organisations' },
-  { href: '/admin/admins', label: 'Admins' },
-  { href: '/admin/logs', label: 'Logs' },
-]
+type Admin = {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  createdAt: string
+}
 
-export default async function AdminAdminsPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (session.user.role !== 'SUPER_ADMIN') redirect('/dashboard')
+type Me = { id: string }
 
-  const admins = await prisma.user.findMany({
-    where: { role: 'SUPER_ADMIN', deletedAt: null },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      createdAt: true,
-      lastLoginAt: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  })
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
-  const recentLogs = await prisma.activityLog.findMany({
-    where: {
-      user: { role: 'SUPER_ADMIN' },
-    },
-    include: {
-      user: { select: { firstName: true, lastName: true, email: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  })
+export default function AdminAdminsPage() {
+  const [admins, setAdmins]     = useState<Admin[]>([])
+  const [me, setMe]             = useState<Me | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [email, setEmail]       = useState('')
+  const [adding, setAdding]     = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/admins')
+      if (res.ok) {
+        const data = await res.json()
+        setAdmins(data.admins ?? [])
+        setMe(data.me ?? null)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    setAdding(true)
+    setAddError(null)
+    try {
+      const res = await fetch('/api/admin/admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setAddError(data.error ?? 'Erreur.'); return }
+      setEmail('')
+      load()
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function handleRemove(userId: string) {
+    if (!confirm('Retirer ce Super Admin ?')) return
+    const res = await fetch(`/api/admin/admins/${userId}`, { method: 'DELETE' })
+    if (res.ok) load()
+    else {
+      const d = await res.json()
+      alert(d.error ?? 'Erreur lors de la suppression.')
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-56 bg-gray-900 flex flex-col flex-shrink-0">
-        <div className="px-5 py-5 border-b border-gray-700">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Back-office</p>
-          <p className="text-sm font-semibold text-white truncate">{session.user.email}</p>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {ADMIN_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                item.href === '/admin/admins'
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
+    <>
+      <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
+        <h1 className="text-lg font-semibold text-gray-900 flex-1">Super Admins</h1>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Ajouter un admin */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Ajouter un Super Admin</h2>
+          <form onSubmit={handleAdd} className="flex gap-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@plateforme.fr"
+              required
+              className="flex-1 h-9 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              type="submit"
+              disabled={adding}
+              className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="px-5 py-4 border-t border-gray-700">
-          <Link href="/dashboard" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Retour au SaaS &rarr;
-          </Link>
+              {adding ? 'Ajout…' : '+ Ajouter'}
+            </button>
+          </form>
+          {addError && <p className="mt-2 text-sm text-red-600">{addError}</p>}
+          <p className="mt-2 text-xs text-gray-400">
+            L&apos;utilisateur doit avoir un compte sur la plateforme. Son rôle sera promu à SUPER_ADMIN.
+          </p>
         </div>
-      </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
-          <h1 className="text-lg font-semibold text-gray-900">Administrateurs</h1>
-          <span className="ml-3 text-sm text-gray-400">{admins.length} super-admin{admins.length > 1 ? 's' : ''}</span>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Liste des admins */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-700">Super-admins actifs</h2>
-                <span className="text-xs text-gray-400">Role: SUPER_ADMIN</span>
-              </div>
-
-              {admins.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">Aucun super-admin trouvé</p>
-              ) : (
-                <ul className="divide-y divide-gray-50">
-                  {admins.map((admin) => (
-                    <li key={admin.id} className="py-3 flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900">
-                            {admin.firstName} {admin.lastName}
-                          </p>
-                          {admin.email === session.user.email && (
-                            <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">Vous</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-400 mt-0.5">{admin.email}</p>
-                        <p className="text-xs text-gray-300 mt-0.5 font-mono">{admin.id}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-gray-500">
-                          Créé {new Date(admin.createdAt).toLocaleDateString('fr-FR')}
-                        </p>
-                        {admin.lastLoginAt && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            Dernière connexion{' '}
-                            {new Date(admin.lastLoginAt).toLocaleDateString('fr-FR')}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Activité récente des admins */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-700">Activité admin récente</h2>
-                <Link
-                  href="/admin/logs"
-                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  Voir tout &rarr;
-                </Link>
-              </div>
-
-              {recentLogs.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">Aucune activité récente</p>
-              ) : (
-                <ul className="divide-y divide-gray-50">
-                  {recentLogs.map((log) => (
-                    <li key={log.id} className="py-2.5 flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-mono text-gray-800">{log.action}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {log.user
-                            ? `${log.user.firstName} ${log.user.lastName}`
-                            : '—'}
-                          {' · '}
-                          {log.entityType}
-                        </p>
-                      </div>
-                      <time className="text-xs text-gray-400 flex-shrink-0">
-                        {new Date(log.createdAt).toLocaleString('fr-FR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </time>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          {/* Note informative */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-            <p className="text-sm text-blue-700">
-              <strong>Note :</strong> L&apos;ajout ou la suppression de super-admins se fait directement
-              en base de données via le flag <code className="font-mono bg-blue-100 px-1 py-0.5 rounded">User.role = SUPER_ADMIN</code>.
-              Contactez l&apos;équipe technique pour toute modification.
-            </p>
-          </div>
-        </main>
-      </div>
-    </div>
+        {/* Liste */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ajouté le</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="py-10 text-center">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : admins.map((admin) => (
+                <tr key={admin.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">{admin.firstName} {admin.lastName}</td>
+                  <td className="px-4 py-3 text-gray-500">{admin.email}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatDate(admin.createdAt)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {me?.id === admin.id ? (
+                      <span className="text-xs text-gray-400">(vous)</span>
+                    ) : admins.length <= 1 ? (
+                      <span className="text-xs text-gray-300">dernier admin</span>
+                    ) : (
+                      <button
+                        onClick={() => handleRemove(admin.id)}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </>
   )
 }

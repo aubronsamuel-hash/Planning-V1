@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
-import logger from '@/lib/logger'
+import type { ActivityLogAction } from '@prisma/client'
 
 function getDateFrom(period: string | null): Date | null {
   const now = new Date()
@@ -43,8 +43,7 @@ export async function GET(req: Request) {
     const dateFrom = getDateFrom(period)
 
     const where = {
-      ...(action ? { action } : {}),
-      ...(organizationId ? { organizationId } : {}),
+      ...(action ? { action: action as ActivityLogAction } : {}),
       ...(userId ? { userId } : {}),
       ...(dateFrom ? { createdAt: { gte: dateFrom } } : {}),
     }

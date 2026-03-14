@@ -1,26 +1,23 @@
 // ─────────────────────────────────────────────────────────
-// GET  /api/projets/[id]/annulations
-// Liste les affectations annulées du projet + statuts cachets
-// doc §12.6 — Page RH suivi des annulations
+// GET /api/projets/[id]/annulations
+//   Liste les affectations annulées + statuts cachets pour RH
+//   ?export=csv → export CSV
+// doc/12-annulations-reports.md §12.6, §12.8
+// Accès : RH minimum
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
-import { internalError, notFound, forbidden } from '@/lib/api-response'
-import logger from '@/lib/logger'
+import { internalError, notFound } from '@/lib/api-response'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const { session, error } = await requireOrgSession({ minRole: 'RH' })
     if (error) return error
 
-    const roleOrg = session.user.organizationRole
-    if (roleOrg !== 'RH' && roleOrg !== 'DIRECTEUR') {
-      return forbidden('Accès réservé au RH et au Directeur.')
-    }
-
     const projet = await prisma.projet.findFirst({
       where: { id: params.id, deletedAt: null },
+      select: { id: true, organizationId: true, title: true },
     })
 
     if (!projet) return notFound('Projet')
@@ -28,7 +25,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const ownershipError = verifyOwnership(projet.organizationId, session.user.organizationId!)
     if (ownershipError) return ownershipError
 
-    // Affectations annulées (ANNULEE ou ANNULEE_TARDIVE) — Règle §12.6
+    const { searchParams } = new URL(req.url)
+    const exportCsv = searchParams.get('export') === 'csv'
+
     const affectations = await prisma.affectation.findMany({
       where: {
         representation: { projetId: params.id },
@@ -37,98 +36,93 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       include: {
         collaborateur: {
           include: {
-            user: { select: { firstName: true, lastName: true } },
+            user: { select: { firstName: true, lastName: true, email: true } },
           },
         },
         posteRequis: { select: { name: true } },
         representation: {
           select: {
-            id: true,
+            id:   true,
             date: true,
-            venueName: true,
-            venueCity: true,
-            status: true,
             annulationReason: true,
-            annulationAt: true,
+            annulationAt:     true,
           },
-        },
-        dpae: {
-          select: { status: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
         },
       },
       orderBy: [
         { representation: { date: 'asc' } },
-        { collaborateur: { user: { lastName: 'asc' } } },
+        { collaborateur:  { user: { lastName: 'asc' } } },
       ],
     })
 
-    // Grouper par représentation
-    const parRepresentation = new Map<
-      string,
-      {
-        representationId: string
-        date: Date
-        venueName: string | null
-        venueCity: string | null
-        annulationReason: string | null
-        annulationAt: Date | null
-        affectations: typeof affectations
-      }
-    >()
+    if (exportCsv) {
+      const rows = [
+        ['nom', 'prénom', 'email', 'contrat', 'poste', 'date_repr', 'cachet_prévu', 'dpae_status', 'décision_cachet'].join(';'),
+        ...affectations.map((a) => [
+          a.collaborateur.user.lastName,
+          a.collaborateur.user.firstName,
+          a.collaborateur.user.email,
+          a.contractTypeUsed ?? '',
+          a.posteRequis.name,
+          new Date(a.representation.date).toLocaleDateString('fr-FR'),
+          a.remuneration != null ? (a.remuneration / 100).toFixed(2).replace('.', ',') : '',
+          a.dpaeStatus ?? '',
+          a.cachetAnnulation ?? 'A_DECIDER',
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';')),
+      ].join('\n')
 
-    for (const aff of affectations) {
-      const repId = aff.representationId
-      if (!parRepresentation.has(repId)) {
-        parRepresentation.set(repId, {
-          representationId: repId,
-          date: aff.representation.date,
-          venueName: aff.representation.venueName,
-          venueCity: aff.representation.venueCity,
-          annulationReason: aff.representation.annulationReason,
-          annulationAt: aff.representation.annulationAt,
-          affectations: [],
-        })
-      }
-      parRepresentation.get(repId)!.affectations.push(aff)
+      return new Response('\uFEFF' + rows, {
+        headers: {
+          'Content-Type':        'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="annulations-${projet.title.replace(/\s+/g, '-')}.csv"`,
+        },
+      })
     }
 
-    // Compter total cachets A_DECIDER
-    const totalCachetsADecider = affectations
-      .filter((a) => a.cachetAnnulation === 'A_DECIDER' && a.cachet)
-      .reduce((sum, a) => sum + (a.cachet ?? 0), 0)
+    // Regrouper par représentation
+    const byRep: Record<string, {
+      representationId: string
+      date: Date
+      annulationReason: string | null
+      annulationAt: Date | null
+      affectations: typeof affectations
+    }> = {}
 
-    const result = Array.from(parRepresentation.values()).map((rep) => ({
-      representationId: rep.representationId,
-      date: rep.date,
-      venueName: rep.venueName,
-      venueCity: rep.venueCity,
-      annulationReason: rep.annulationReason,
-      annulationAt: rep.annulationAt,
-      affectations: rep.affectations.map((aff) => ({
-        id: aff.id,
-        collaborateur: {
-          nom: `${aff.collaborateur.user.lastName} ${aff.collaborateur.user.firstName}`,
-          prenom: aff.collaborateur.user.firstName,
-        },
-        contractType: aff.collaborateur.contractType,
-        poste: aff.posteRequis.name,
-        cachet: aff.cachet,
-        confirmationStatus: aff.confirmationStatus,
-        cachetAnnulation: aff.cachetAnnulation,
-        annulationRaison: aff.annulationRaison,
-        annulationDate: aff.annulationDate,
-        dpaeStatus: aff.dpae[0]?.status ?? null,
-      })),
-    }))
+    for (const aff of affectations) {
+      const repId = aff.representation.id
+      if (!byRep[repId]) {
+        byRep[repId] = {
+          representationId: repId,
+          date:             aff.representation.date,
+          annulationReason: aff.representation.annulationReason,
+          annulationAt:     aff.representation.annulationAt,
+          affectations:     [],
+        }
+      }
+      byRep[repId].affectations.push(aff)
+    }
+
+    // Calculs agrégés
+    const totalADecider = affectations
+      .filter((a) => a.cachetAnnulation === 'A_DECIDER' && a.remuneration != null)
+      .reduce((sum, a) => sum + (a.remuneration ?? 0), 0)
+
+    const nbDpaeSoumises = affectations.filter(
+      (a) => a.dpaeStatus === 'ENVOYEE' || a.dpaeStatus === 'CONFIRMEE'
+    ).length
 
     return NextResponse.json({
-      annulations: result,
-      totalCachetsADecider,
+      projetId:        projet.id,
+      projetTitle:     projet.title,
+      representations: Object.values(byRep),
+      totaux: {
+        nbAffectations:  affectations.length,
+        nbDpaeSoumises,
+        totalADecider,   // en centimes
+      },
     })
   } catch (err) {
-    void logger.error('GET /api/projets/[id]/annulations', err, { route: 'GET /api/projets/[id]/annulations' })
+    console.error('[GET /api/projets/[id]/annulations]', err)
     return internalError()
   }
 }

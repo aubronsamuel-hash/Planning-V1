@@ -22,7 +22,7 @@ export async function GET(
     const { id } = params
 
     const organization = await prisma.organization.findUnique({
-      where: { id, deletedAt: null },
+      where: { id },
       include: {
         memberships: {
           include: {
@@ -37,19 +37,10 @@ export async function GET(
           },
           orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
         },
-        activityLogs: {
-          include: {
-            organization: {
-              select: { name: true },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
         _count: {
           select: {
             projets: true,
-            affectations: true,
+            memberships: true,
           },
         },
       },
