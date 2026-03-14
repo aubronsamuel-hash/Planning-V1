@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
+import { hasFeature } from '@/lib/plans'
 import { internalError, notFound } from '@/lib/api-response'
 import logger from '@/lib/logger'
 
@@ -19,6 +20,13 @@ export async function GET(
     if (error) return error
 
     const orgId = session.user.organizationId!
+
+    // Vérifier plan (module tournée)
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { plan: true },
+    })
+    const hasTourneeModule = org ? hasFeature(org.plan, 'moduleTournee') : false
 
     // Vérifier ownership projet → org
     const projet = await prisma.projet.findFirst({
@@ -100,8 +108,27 @@ export async function GET(
       orderBy: { posteRequis: { equipe: { name: 'asc' } } },
     })
 
+    // Véhicules assignés à cette représentation (ENTERPRISE uniquement)
+    const vehiculeAssignments = hasTourneeModule
+      ? await prisma.vehiculeAssignment.findMany({
+          where: { representationId: params.repId },
+          include: {
+            vehicule: { select: { id: true, label: true, type: true, capacitePersonnes: true } },
+            passagers: {
+              include: {
+                collaborateur: {
+                  include: { user: { select: { firstName: true, lastName: true } } },
+                },
+              },
+            },
+          },
+          orderBy: { departTime: 'asc' },
+        })
+      : []
+
     return NextResponse.json({
       fdr,
+      hasTourneeModule,
       representation: {
         ...rep,
         date: rep.date.toISOString(),
@@ -111,6 +138,19 @@ export async function GET(
         title: projet.title,
         colorCode: projet.colorCode,
       },
+      vehiculeAssignments: vehiculeAssignments.map((va) => ({
+        id: va.id,
+        departLieu: va.departLieu,
+        departTime: va.departTime,
+        arriveeEstimeeTime: va.arriveeEstimeeTime,
+        notes: va.notes,
+        vehicule: va.vehicule,
+        passagers: va.passagers.map((p) => ({
+          id: p.id,
+          role: p.role,
+          collaborateur: { nom: `${p.collaborateur.user.firstName} ${p.collaborateur.user.lastName}` },
+        })),
+      })),
       affectations: affectations.map((a) => ({
         id: a.id,
         startTime: a.startTime,

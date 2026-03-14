@@ -45,6 +45,9 @@ export async function GET(
     })
 
     let monAffectation = null
+    let monHebergement = null
+    let monTransport = null
+
     if (collaborateur) {
       monAffectation = await prisma.affectation.findFirst({
         where: {
@@ -56,6 +59,72 @@ export async function GET(
           posteRequis: { select: { name: true } },
         },
       })
+
+      // Hébergement (§19.1.6) — chercher la chambre pour la nuit de cette représentation
+      const chambreOccupant = await prisma.chambreOccupant.findFirst({
+        where: {
+          collaborateurId: collaborateur.id,
+          nuitDu: rep.date,
+          chambre: { hebergement: { projetId: rep.projet.id } },
+        },
+        include: {
+          chambre: { include: { hebergement: true } },
+        },
+      })
+      if (chambreOccupant) {
+        const h = chambreOccupant.chambre.hebergement
+        monHebergement = {
+          nomHotel: h.nom,
+          adresse: h.adresse,
+          ville: h.ville,
+          telephone: h.telephone,
+          chambreNumero: chambreOccupant.chambre.numero,
+          chambreType: chambreOccupant.chambre.type,
+          checkIn: h.checkIn.toISOString(),
+          checkOut: h.checkOut.toISOString(),
+        }
+      }
+
+      // Transport (§19.2.5) — véhicule assigné pour cette représentation
+      const vehiculePassager = await prisma.vehiculePassager.findFirst({
+        where: {
+          collaborateurId: collaborateur.id,
+          vehiculeAssignment: { representationId: params.representationId },
+        },
+        include: {
+          vehiculeAssignment: {
+            include: {
+              vehicule: { select: { label: true, type: true } },
+              passagers: {
+                where: { role: 'CONDUCTEUR' },
+                include: {
+                  collaborateur: {
+                    include: { user: { select: { firstName: true, lastName: true, phone: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+      if (vehiculePassager) {
+        const va = vehiculePassager.vehiculeAssignment
+        const conducteurPassager = va.passagers[0]
+        monTransport = {
+          role: vehiculePassager.role,
+          vehicule: va.vehicule,
+          departLieu: va.departLieu,
+          departTime: va.departTime,
+          arriveeEstimeeTime: va.arriveeEstimeeTime,
+          notes: va.notes,
+          conducteur: conducteurPassager
+            ? {
+                nom: `${conducteurPassager.collaborateur.user.firstName} ${conducteurPassager.collaborateur.user.lastName}`,
+                telephone: conducteurPassager.collaborateur.user.phone,
+              }
+            : null,
+        }
+      }
     }
 
     return NextResponse.json({
@@ -86,6 +155,8 @@ export async function GET(
             remuneration: monAffectation.remuneration,
           }
         : null,
+      monHebergement,
+      monTransport,
     })
   } catch (err) {
     void logger.error('GET /api/mon-planning/[representationId]/feuille-de-route', err, { route: 'GET /api/mon-planning/[representationId]/feuille-de-route' })

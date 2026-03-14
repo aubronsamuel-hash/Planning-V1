@@ -23,6 +23,17 @@ type MonAffectation = {
   startTime: string; endTime: string; poste: string
   contractTypeUsed: string; confirmationStatus: string; remuneration: number | null
 }
+type MonHebergement = {
+  nomHotel: string; adresse: string | null; ville: string | null; telephone: string | null
+  chambreNumero: string | null; chambreType: string
+  checkIn: string; checkOut: string
+}
+type MonTransport = {
+  role: 'CONDUCTEUR' | 'PASSAGER'
+  vehicule: { label: string; type: string }
+  departLieu: string | null; departTime: string | null; arriveeEstimeeTime: string | null; notes: string | null
+  conducteur: { nom: string; telephone: string | null } | null
+}
 type Data = {
   representation: {
     id: string; date: string; venueName: string | null; venueCity: string | null
@@ -33,6 +44,8 @@ type Data = {
   fdr: { id: string; phases: Phase[]; contacts: Contact[]; notesGenerales: string | null; transportInfo: string | null } | null
   nonDisponible: boolean
   monAffectation: MonAffectation | null
+  monHebergement: MonHebergement | null
+  monTransport: MonTransport | null
 }
 
 const PHASE_ICONS: Record<PhaseType, string> = {
@@ -47,6 +60,9 @@ const PHASE_LABELS: Record<PhaseType, string> = {
 }
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: 'CDI', CDD: 'CDD', INTERMITTENT: '🟠 Intermittent',
+}
+const CHAMBRE_TYPE_LABELS: Record<string, string> = {
+  INDIVIDUELLE: 'Individuelle', DOUBLE: 'Double', DOUBLE_USAGE_SIMPLE: 'Double usage simple', SUITE: 'Suite',
 }
 const CONFIRM_LABELS: Record<string, string> = {
   CONFIRMEE: '✅ Confirmée', EN_ATTENTE: '🟠 En attente', REFUSEE: '❌ Refusée', NON_REQUISE: '—',
@@ -132,7 +148,7 @@ export default function FeuilleDeRouteMobilePage({
     </div>
   )
 
-  const { representation, projet, fdr, nonDisponible, monAffectation } = data
+  const { representation, projet, fdr, nonDisponible, monAffectation, monHebergement, monTransport } = data
 
   const dateFormatted = new Date(representation.date).toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -224,6 +240,55 @@ export default function FeuilleDeRouteMobilePage({
           </Card>
         )}
 
+        {/* ── Mon hébergement (§19.1.6) ───────────────────── */}
+        {monHebergement && (
+          <Card title="Mon hébergement">
+            <div className="space-y-2">
+              <div>
+                <p className="font-semibold text-gray-900">🏨 {monHebergement.nomHotel}</p>
+                {monHebergement.adresse && (
+                  <p className="text-sm text-gray-500 mt-0.5">{monHebergement.adresse}</p>
+                )}
+                {monHebergement.ville && (
+                  <p className="text-sm text-gray-500">{monHebergement.ville}</p>
+                )}
+                {(monHebergement.adresse || monHebergement.ville) && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([monHebergement.nomHotel, monHebergement.adresse, monHebergement.ville].filter(Boolean).join(', '))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 inline-flex items-center gap-1 text-sm text-indigo-600 font-medium hover:underline"
+                  >
+                    📍 Ouvrir dans Maps
+                  </a>
+                )}
+              </div>
+              <div className="border-t border-gray-100 pt-2 space-y-1 text-sm">
+                {monHebergement.chambreNumero && (
+                  <p className="text-gray-700">
+                    Chambre {monHebergement.chambreNumero}
+                    <span className="text-gray-400 ml-1">({CHAMBRE_TYPE_LABELS[monHebergement.chambreType] ?? monHebergement.chambreType})</span>
+                  </p>
+                )}
+                <p className="text-gray-600">
+                  Check-in : {new Date(monHebergement.checkIn).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                </p>
+                <p className="text-gray-600">
+                  Check-out : {new Date(monHebergement.checkOut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                </p>
+                {monHebergement.telephone && (
+                  <a
+                    href={`tel:${monHebergement.telephone}`}
+                    className="flex items-center gap-1.5 text-indigo-600 hover:underline mt-1"
+                  >
+                    📞 Réception : {monHebergement.telephone}
+                  </a>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* ── Feuille non disponible ───────────────────────── */}
         {nonDisponible && (
           <Card>
@@ -262,12 +327,58 @@ export default function FeuilleDeRouteMobilePage({
           </Card>
         )}
 
-        {/* ── Transport ────────────────────────────────────── */}
-        {fdr?.transportInfo && (
+        {/* ── Mon transport (§19.2.5) ──────────────────────── */}
+        {monTransport ? (
+          <Card title="Mon transport">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">
+                  {monTransport.vehicule.type === 'CAMION' ? '🚚' : monTransport.vehicule.type === 'VAN' ? '🚐' : monTransport.vehicule.type === 'VOITURE' ? '🚗' : '🚌'}
+                </span>
+                <span className="font-semibold text-gray-900 text-sm">{monTransport.vehicule.label}</span>
+                {monTransport.role === 'CONDUCTEUR' && (
+                  <span className="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Conducteur</span>
+                )}
+              </div>
+              {(monTransport.departTime || monTransport.departLieu) && (
+                <p className="text-sm text-gray-700">
+                  Départ :{monTransport.departTime && <strong> {monTransport.departTime.replace(':', 'h')}</strong>}
+                  {monTransport.departLieu && ` · ${monTransport.departLieu}`}
+                </p>
+              )}
+              {monTransport.departLieu && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(monTransport.departLieu)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                >
+                  📍 Ouvrir dans Maps
+                </a>
+              )}
+              {monTransport.role === 'PASSAGER' && monTransport.conducteur && (
+                <div className="text-sm text-gray-600">
+                  <p>Conducteur : {monTransport.conducteur.nom}</p>
+                  {monTransport.conducteur.telephone && (
+                    <a
+                      href={`tel:${monTransport.conducteur.telephone}`}
+                      className="flex items-center gap-1 text-indigo-600 hover:underline mt-0.5"
+                    >
+                      📞 {monTransport.conducteur.telephone}
+                    </a>
+                  )}
+                </div>
+              )}
+              {monTransport.notes && (
+                <p className="text-xs text-gray-400 italic">{monTransport.notes}</p>
+              )}
+            </div>
+          </Card>
+        ) : fdr?.transportInfo ? (
           <Card title="Transport">
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{fdr.transportInfo}</p>
           </Card>
-        )}
+        ) : null}
 
         {/* ── Notes générales ──────────────────────────────── */}
         {fdr?.notesGenerales && (

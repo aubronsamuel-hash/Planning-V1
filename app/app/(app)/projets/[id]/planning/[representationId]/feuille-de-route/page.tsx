@@ -39,6 +39,12 @@ type Representation = {
   venueName: string | null; venueCity: string | null; venueAddress: string | null
 }
 type Projet = { id: string; title: string; colorCode: string }
+type VehiculeAssignment = {
+  id: string
+  departLieu: string | null; departTime: string | null; arriveeEstimeeTime: string | null; notes: string | null
+  vehicule: { id: string; label: string; type: string; capacitePersonnes: number | null }
+  passagers: Array<{ id: string; role: 'CONDUCTEUR' | 'PASSAGER'; collaborateur: { nom: string } }>
+}
 
 // ── Constantes d'affichage ─────────────────────────────────
 const PHASE_ICONS: Record<PhaseType, string> = {
@@ -89,6 +95,8 @@ export default function FeuilleDeRoutePage({
   const [representation, setRepresentation] = useState<Representation | null>(null)
   const [projet, setProjet] = useState<Projet | null>(null)
   const [affectations, setAffectations] = useState<Affectation[]>([])
+  const [hasTourneeModule, setHasTourneeModule] = useState(false)
+  const [vehiculeAssignments, setVehiculeAssignments] = useState<VehiculeAssignment[]>([])
 
   // Modals
   const [phaseModal, setPhaseModal] = useState<'add' | Phase | null>(null)
@@ -121,6 +129,8 @@ export default function FeuilleDeRoutePage({
       setRepresentation(data.representation)
       setProjet(data.projet)
       setAffectations(data.affectations)
+      setHasTourneeModule(data.hasTourneeModule ?? false)
+      setVehiculeAssignments(data.vehiculeAssignments ?? [])
       setTransportDraft(data.fdr.transportInfo ?? '')
       setNotesDraft(data.fdr.notesGenerales ?? '')
     } finally {
@@ -332,16 +342,68 @@ export default function FeuilleDeRoutePage({
 
           {/* Transport */}
           <Section title="Transport">
-            <textarea
-              value={transportDraft}
-              onChange={(e) => setTransportDraft(e.target.value)}
-              rows={4}
-              placeholder="Van départ Gare du Nord à 09h45 — contact Marc 06 12 34 56&#10;Retour départ 16h30 depuis le théâtre"
-              className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Champ texte libre · Pour la gestion de flotte structurée, voir le Module Tournée.
-            </p>
+            {hasTourneeModule && vehiculeAssignments.length > 0 ? (
+              <div className="space-y-3">
+                {vehiculeAssignments.map((va) => {
+                  const conducteur = va.passagers.find((p) => p.role === 'CONDUCTEUR')
+                  const passagers = va.passagers.filter((p) => p.role === 'PASSAGER')
+                  const vehiculeIcon = va.vehicule.type === 'CAMION' ? '🚚' : va.vehicule.type === 'VAN' ? '🚐' : va.vehicule.type === 'VOITURE' ? '🚗' : '🚌'
+                  return (
+                    <div key={va.id} className="rounded-xl border border-gray-200 p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{vehiculeIcon}</span>
+                        <span className="font-semibold text-gray-900 text-sm">{va.vehicule.label}</span>
+                        {va.vehicule.capacitePersonnes && (
+                          <span className="text-xs text-gray-400 ml-auto">{va.passagers.length}/{va.vehicule.capacitePersonnes} places</span>
+                        )}
+                      </div>
+                      {(va.departTime || va.departLieu) && (
+                        <p className="text-sm text-gray-600">
+                          {va.departTime && <span>Départ : <strong>{va.departTime.replace(':', 'h')}</strong></span>}
+                          {va.departLieu && <span> · {va.departLieu}</span>}
+                        </p>
+                      )}
+                      {conducteur && (
+                        <p className="text-sm text-gray-600">Conducteur : {conducteur.collaborateur.nom}</p>
+                      )}
+                      {passagers.length > 0 && (
+                        <p className="text-sm text-gray-500">Passagers : {passagers.map((p) => p.collaborateur.nom).join(' · ')}</p>
+                      )}
+                      {passagers.length === 0 && !conducteur && (
+                        <p className="text-xs text-gray-400 italic">Chargement matériel — aucun passager</p>
+                      )}
+                      {va.notes && <p className="text-xs text-gray-400 italic">{va.notes}</p>}
+                    </div>
+                  )
+                })}
+                {/* Retrocompatibilité — afficher aussi le texte libre si présent */}
+                {fdr.transportInfo && (
+                  <div className="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-3">
+                    <p className="text-xs text-gray-400 mb-1">Notes transport libres</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{fdr.transportInfo}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={transportDraft}
+                  onChange={(e) => setTransportDraft(e.target.value)}
+                  rows={4}
+                  placeholder="Van départ Gare du Nord à 09h45 — contact Marc 06 12 34 56&#10;Retour départ 16h30 depuis le théâtre"
+                  className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                />
+                {hasTourneeModule ? (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Aucun véhicule assigné à cette date. Gérez les véhicules dans le module Tournée.
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Champ texte libre · Pour la gestion de flotte structurée, voir le Module Tournée.
+                  </p>
+                )}
+              </>
+            )}
           </Section>
 
           {/* Notes générales */}
