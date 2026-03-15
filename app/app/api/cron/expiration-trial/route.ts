@@ -69,7 +69,7 @@ export async function GET(request: Request) {
         data: {
           userId: directeur.id,
           organizationId: org.id,
-          type: 'PAIEMENT_ECHOUE', // réutilisation du type le plus proche
+          type: 'RGPD_AVERTISSEMENT', // réutilisation du type le plus proche
           priority: 'URGENT',
           title: `⏰ Essai PRO : ${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}`,
           body: `Votre période d'essai se termine le ${trialEndDate}. Souscrivez pour continuer.`,
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
         data: {
           userId: directeur.id,
           organizationId: org.id,
-          type: 'PAIEMENT_ECHOUE',
+          type: 'RGPD_AVERTISSEMENT',
           priority: 'CRITIQUE',
           title: `❌ Essai PRO expiré${casB ? ' — Mode lecture seule activé' : ''}`,
           body: casB

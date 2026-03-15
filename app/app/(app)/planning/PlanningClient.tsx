@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { SkeletonCalendar } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type ProjetLight = { id: string; title: string; colorCode: string }
 
@@ -142,14 +144,16 @@ export function PlanningClient({ projets }: { projets: ProjetLight[] }) {
       </div>
 
       {loading ? (
-        <div className="text-center py-20">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Chargement...</p>
-        </div>
+        <SkeletonCalendar />
       ) : error ? (
-        <div className="text-center py-20">
-          <p className="text-red-500 mb-3">⚠️ {error}</p>
-          <button onClick={fetchData} className="text-sm text-indigo-600 hover:underline">Réessayer</button>
+        <div className="bg-white rounded-xl border border-red-200 px-6 py-12 text-center">
+          <p className="text-sm text-red-600 mb-3">⚠️ {error}</p>
+          <button
+            onClick={fetchData}
+            className="btn btn-secondary btn-sm"
+          >
+            Réessayer
+          </button>
         </div>
       ) : (
         <>
@@ -235,9 +239,12 @@ export function PlanningClient({ projets }: { projets: ProjetLight[] }) {
 
           {/* Empty state si aucune représentation */}
           {data && data.representations.length === 0 && (
-            <div className="mt-8 text-center py-8 text-sm text-gray-400">
-              Aucune représentation ce mois-ci.
-            </div>
+            <EmptyState
+              icon="📅"
+              title="Aucune représentation ce mois-ci"
+              description="Pas de spectacle programmé pour cette période. Naviguez vers un autre mois ou ajoutez des représentations depuis un projet."
+              className="mt-6"
+            />
           )}
         </>
       )}

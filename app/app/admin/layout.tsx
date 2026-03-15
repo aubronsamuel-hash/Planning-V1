@@ -6,7 +6,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options'
 
 const ADMIN_NAV = [
   { href: '/admin',               label: 'Tableau de bord', icon: '📊' },

@@ -62,17 +62,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         representation: {
           select: { date: true, venueName: true, venueCity: true, annulationReason: true },
         },
-        dpae: {
-          select: { status: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
+        // dpaeStatus est un champ direct sur Affectation (pas un modèle séparé)
       },
       orderBy: [{ representation: { date: 'asc' } }],
     })
 
     const lignes = affectations.map((aff) => {
-      const dpaeStatus = aff.dpae[0]?.status ?? null
+      const dpaeStatus = aff.dpaeStatus ?? null
       const dpaeLabel =
         dpaeStatus === 'ENVOYEE'
           ? 'Soumise'
@@ -102,7 +98,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         escapeCsv(formatDate(aff.representation.date)),
         escapeCsv(aff.representation.venueName),
         escapeCsv(aff.representation.venueCity),
-        escapeCsv(aff.cachet != null ? `${aff.cachet.toFixed(2)} €` : '—'),
+        escapeCsv(aff.remuneration != null ? `${(aff.remuneration / 100).toFixed(2)} €` : '—'),
         escapeCsv(dpaeLabel),
         escapeCsv(typeAnnulation),
         escapeCsv(cachetDecision),

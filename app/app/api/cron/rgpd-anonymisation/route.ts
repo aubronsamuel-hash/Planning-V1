@@ -86,7 +86,7 @@ export async function GET(request: Request) {
         ],
       },
       include: {
-        collaborateurs: { select: { id: true } },
+        collaborateur: { select: { id: true } },
       },
       take: 100,
     })
@@ -109,9 +109,9 @@ export async function GET(request: Request) {
           })
 
           // Effacer les données sensibles du Collaborateur (NSS, IBAN)
-          if (user.collaborateurs.length > 0) {
-            await tx.collaborateur.updateMany({
-              where: { id: { in: user.collaborateurs.map((c) => c.id) } },
+          if (user.collaborateur) {
+            await tx.collaborateur.update({
+              where: { id: user.collaborateur.id },
               data: {
                 socialSecurityNumber: null,
                 iban: null,
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
               action: 'USER_ANONYMIZED',
               entityType: 'User',
               entityId: user.id,
-              metadata: { uuid, nbCollaborateurs: user.collaborateurs.length },
+              metadata: { uuid, nbCollaborateurs: user.collaborateur ? 1 : 0 },
             },
           })
         })

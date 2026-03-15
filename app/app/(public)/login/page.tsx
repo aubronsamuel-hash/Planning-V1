@@ -5,7 +5,7 @@
 // doc/06-regles-decisions.md Règle #16, #17
 // Flux principal : email → magic link → /login/verify
 // ─────────────────────────────────────────────────────────
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
@@ -18,7 +18,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: 'Lien invalide ou expiré. Demandez un nouveau lien.',
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
 
@@ -204,5 +204,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-sm"><div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-400 text-sm">Chargement…</div></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

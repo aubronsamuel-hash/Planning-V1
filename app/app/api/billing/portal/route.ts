@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { requireOrgSession } from '@/lib/auth'
@@ -5,14 +7,13 @@ import { internalError } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
 import logger from '@/lib/logger'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
-
-const APP_URL = process.env.NEXTAUTH_URL!
-
 export async function GET(_req: Request) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2026-02-25.clover',
+    })
+    const APP_URL = process.env.NEXTAUTH_URL!
+
     const { session, error } = await requireOrgSession({ minRole: 'DIRECTEUR' })
     if (error) return error
 

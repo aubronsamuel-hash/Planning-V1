@@ -9,6 +9,12 @@
     --color-brand-dark:#4F46E5; /* indigo-600 */
   }
 
+  /* Animation d'entrée des toasts */
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(0.75rem) scale(0.96); }
+    to   { opacity: 1; transform: translateX(0)        scale(1);    }
+  }
+
   * {
     box-sizing: border-box;
   }
@@ -45,7 +51,45 @@
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
   .input-field {
-    @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white;
+    @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition-colors;
+  }
+
+  /* ── Boutons unifiés ─────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium text-sm rounded-lg border
+           transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1
+           disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2;
+  }
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white border-transparent;
+  }
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300;
+  }
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 active:bg-gray-200 text-gray-600 border-transparent;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-transparent;
+  }
+  .btn-sm {
+    @apply text-xs px-3 py-1.5;
+  }
+  .btn-lg {
+    @apply px-5 py-2.5 rounded-xl;
+  }
+
+  /* ── Carte standard ──────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-xl border border-gray-200;
+  }
+  .card-padded {
+    @apply bg-white rounded-xl border border-gray-200 p-5;
+  }
+
+  /* Animation toast */
+  .toast-enter {
+    animation: toast-in 0.2s ease-out;
   }
 }
 

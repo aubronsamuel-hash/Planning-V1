@@ -18,7 +18,7 @@ async function getStripe() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Stripe = require('stripe')
-      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' })
+      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' })
     } catch { /* stripe not installed */ }
   }
   return stripe

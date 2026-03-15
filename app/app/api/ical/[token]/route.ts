@@ -113,6 +113,9 @@ export async function GET(_req: Request, { params }: RouteParams) {
           },
         },
       },
+      posteRequis: {
+        select: { name: true },
+      },
     },
     orderBy: { representation: { date: 'asc' } },
   })
@@ -123,7 +126,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
   const vevents = affectations.map((a) => {
     const rep = a.representation
     const projetTitle = escapeIcal(rep.projet.title)
-    const posteLabel = escapeIcal(a.posteLabel ?? '')
+    const posteLabel = escapeIcal(a.posteRequis?.name ?? '')
     const venueName = escapeIcal(rep.venueName ?? '')
     const venueCity = escapeIcal(rep.venueCity ?? '')
     const location = [venueName, venueCity].filter(Boolean).join(', ')

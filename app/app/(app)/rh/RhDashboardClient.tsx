@@ -5,6 +5,9 @@
 // ─────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
 import type { DpaeItem } from '@/app/api/rh/route'
+import { useToast } from '@/components/ui/Toast'
+import { SkeletonTableRows } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ── Types ──────────────────────────────────────────────────
 type DpaeGrouped = {
@@ -41,6 +44,7 @@ type Props = {
 
 // ── Composant principal ────────────────────────────────────
 export function RhDashboardClient({ canExportCsv, organizationPlan }: Props) {
+  const { success, error: toastError } = useToast()
   const [data, setData] = useState<DpaeGrouped | null>(null)
   const [loading, setLoading] = useState(true)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -87,13 +91,18 @@ export function RhDashboardClient({ canExportCsv, organizationPlan }: Props) {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setErreurAction(body.error ?? 'Erreur lors de la mise à jour')
+        const msg = body.error ?? 'Erreur lors de la mise à jour'
+        setErreurAction(msg)
+        toastError('Mise à jour échouée', msg)
         return
       }
       // Recharger les données
       await charger()
+      const label = nouveauStatut === 'ENVOYEE' ? 'DPAE marquée envoyée' : 'DPAE confirmée'
+      success(label)
     } catch {
       setErreurAction('Impossible de contacter le serveur')
+      toastError('Erreur réseau', 'Impossible de contacter le serveur')
     } finally {
       setActionEnCours(null)
     }
@@ -120,6 +129,7 @@ export function RhDashboardClient({ canExportCsv, organizationPlan }: Props) {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+      success('Export téléchargé', `export-paie-${today}.csv`)
     } catch {
       setErreurAction('Impossible de générer l\'export')
     } finally {
@@ -232,14 +242,21 @@ export function RhDashboardClient({ canExportCsv, organizationPlan }: Props) {
 
       {/* ── État de chargement ─────────────────────────────── */}
       {loading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-gray-400">
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            <span className="text-sm">Chargement des DPAE...</span>
-          </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wide bg-gray-50">
+                <th className="text-left px-4 py-3">Collaborateur</th>
+                <th className="text-left px-4 py-3 hidden sm:table-cell">Type</th>
+                <th className="text-left px-4 py-3">Date</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Représentation</th>
+                <th className="text-right px-4 py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              <SkeletonTableRows rows={6} cols={5} />
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -260,21 +277,17 @@ export function RhDashboardClient({ canExportCsv, organizationPlan }: Props) {
       {!loading && !erreur && data && (
         <>
           {itemsActifs.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-4xl mb-4">
-                {ongletActif === 'confirmee' ? '✓' : ongletActif === 'envoyee' ? '📤' : '📋'}
-              </p>
-              <h2 className="text-base font-medium text-gray-700 mb-1">
-                Aucune DPAE &laquo;{ONGLET_LABELS[ongletActif]}&raquo;
-              </h2>
-              <p className="text-sm text-gray-400">
-                {ongletActif === 'aFaire'
+            <EmptyState
+              icon={ongletActif === 'confirmee' ? '✅' : ongletActif === 'envoyee' ? '📤' : '📋'}
+              title={`Aucune DPAE « ${ONGLET_LABELS[ongletActif]} »`}
+              description={
+                ongletActif === 'aFaire'
                   ? 'Toutes les DPAE ont été envoyées ou confirmées.'
                   : ongletActif === 'envoyee'
                   ? 'Aucune DPAE en attente de confirmation.'
-                  : 'Aucune DPAE confirmée pour l\'instant.'}
-              </p>
-            </div>
+                  : 'Aucune DPAE confirmée pour l\'instant.'
+              }
+            />
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">

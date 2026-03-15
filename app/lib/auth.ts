@@ -2,7 +2,7 @@
 // Helpers d'autorisation — doc/23-architecture-technique.md §23.1
 // ─────────────────────────────────────────────────────────
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { OrganizationRole } from '@prisma/client'

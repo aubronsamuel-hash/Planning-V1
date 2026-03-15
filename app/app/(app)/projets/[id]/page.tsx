@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────
 import { redirect, notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import { ProjetDetailClient } from './ProjetDetailClient'
 
@@ -122,7 +122,7 @@ export default async function ProjetDetailPage({ params }: Params) {
       venueAddress: rep.venueAddress,
       notes: rep.notes,
       affectationsCount: rep._count.affectations,
-      statutVisuel: hasPosteCritiqueManquant ? 'ROUGE' : hasPosteManquant ? 'JAUNE' : 'VERT',
+      statutVisuel: (hasPosteCritiqueManquant ? 'ROUGE' : hasPosteManquant ? 'JAUNE' : 'VERT') as 'VERT' | 'JAUNE' | 'ROUGE',
     }
   })
 

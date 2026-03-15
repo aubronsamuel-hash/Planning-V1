@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { requireSuperAdmin } from '@/lib/auth'
 import { internalError } from '@/lib/api-response'
 import type { ActivityLogAction } from '@prisma/client'
+import logger from '@/lib/logger'
 
 function getDateFrom(period: string | null): Date | null {
   const now = new Date()

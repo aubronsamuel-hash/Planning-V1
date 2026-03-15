@@ -102,8 +102,6 @@ export async function GET(request: Request) {
             title: `⚠️ ${rep.projet.title} · ${dateStr} — ${nbManquants} poste(s) non pourvu(s) (J-7)`,
             body: postesManquants.map((p) => `${p.nom}: ${p.manquants} manquant(s)`).join(' · '),
             link: `/projets/${rep.projet.id}`,
-            relatedId: rep.id,
-            relatedType: 'representation',
           },
         })
       }
@@ -179,8 +177,6 @@ export async function GET(request: Request) {
             title: `🔴 ${rep.projet.title} · ${dateStr} — ${nbManquants} poste(s) non pourvu(s) (J-2)`,
             body: postesManquants.map((p) => `${p.nom}: ${p.manquants} manquant(s)`).join(' · '),
             link: `/projets/${rep.projet.id}`,
-            relatedId: rep.id,
-            relatedType: 'representation',
           },
         })
 

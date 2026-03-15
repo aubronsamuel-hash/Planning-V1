@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     // Trouver le collaborateur de l'user dans cette org
     const collab = await prisma.collaborateur.findFirst({
-      where: { userId: session.user.id, organizationId },
+      where: { userId: session.user.id },
     })
     if (!collab) return NextResponse.json({ affectations: [], remunerationMois: 0 })
 
