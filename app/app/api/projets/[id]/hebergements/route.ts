@@ -1,46 +1,43 @@
 // ─────────────────────────────────────────────────────────
-// GET  /api/projets/[id]/hebergements — Lister les hébergements d'un projet
+// GET  /api/projets/[id]/hebergements — Liste des hébergements
 // POST /api/projets/[id]/hebergements — Créer un hébergement
-// doc/19-module-tournee.md §19.1 — ENTERPRISE uniquement
+// doc/19-module-tournee.md §19.1 — plan ENTERPRISE requis
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
-import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
+import { forbidden, internalError, notFound, validationError } from '@/lib/api-response'
 import { hasFeature } from '@/lib/plans'
-import logger from '@/lib/logger'
 
 const CreateHebergementSchema = z.object({
   nom: z.string().min(1).max(200),
-  adresse: z.string().max(500).optional(),
+  adresse: z.string().max(300).optional(),
   ville: z.string().max(100).optional(),
-  telephone: z.string().max(30).optional(),
-  email: z.string().email().optional(),
-  checkIn: z.string().datetime(),
-  checkOut: z.string().datetime(),
-  notes: z.string().max(2000).optional(),
+  telephone: z.string().max(20).optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format: YYYY-MM-DD'),
+  checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format: YYYY-MM-DD'),
+  notes: z.string().max(1000).optional(),
 })
 
 // ── GET ────────────────────────────────────────────────────
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOrgSession({ minRole: 'REGISSEUR' })
+    const { session, error } = await requireOrgSession()
     if (error) return error
 
-    const projet = await prisma.projet.findFirst({ where: { id: params.id } })
+    const projet = await prisma.projet.findFirst({
+      where: { id: params.id },
+      include: { organization: { select: { plan: true } } },
+    })
     if (!projet) return notFound('Projet')
 
     const ownershipError = verifyOwnership(projet.organizationId, session.user.organizationId!)
     if (ownershipError) return ownershipError
 
-    // Vérifier plan ENTERPRISE
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId! },
-      select: { plan: true },
-    })
-    if (!org || !hasFeature(org.plan, 'moduleTournee')) {
-      return forbidden('Le module Tournée est réservé au plan ENTERPRISE. Passez sur /settings/organisation#facturation')
+    if (!hasFeature(projet.organization.plan, 'moduleTournee')) {
+      return forbidden('Module Tournée disponible sur le plan ENTERPRISE uniquement — /settings/organisation#facturation')
     }
 
     const hebergements = await prisma.hebergement.findMany({
@@ -51,22 +48,21 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             occupants: {
               include: {
                 collaborateur: {
-                  include: {
-                    user: { select: { id: true, firstName: true, lastName: true } },
-                  },
+                  include: { user: { select: { id: true, firstName: true, lastName: true } } },
                 },
               },
+              orderBy: { nuitDu: 'asc' },
             },
           },
+          orderBy: { numero: 'asc' },
         },
-        createdBy: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { checkIn: 'asc' },
     })
 
     return NextResponse.json(hebergements)
   } catch (err) {
-    void logger.error('GET /api/projets/[id]/hebergements', err, { route: 'GET /api/projets/[id]/hebergements' })
+    console.error('[GET /api/projets/[id]/hebergements]', err)
     return internalError()
   }
 }
@@ -77,19 +73,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const { session, error } = await requireOrgSession({ minRole: 'REGISSEUR', write: true })
     if (error) return error
 
-    const projet = await prisma.projet.findFirst({ where: { id: params.id } })
+    const projet = await prisma.projet.findFirst({
+      where: { id: params.id },
+      include: { organization: { select: { plan: true } } },
+    })
     if (!projet) return notFound('Projet')
 
     const ownershipError = verifyOwnership(projet.organizationId, session.user.organizationId!)
     if (ownershipError) return ownershipError
 
-    // Vérifier plan ENTERPRISE
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId! },
-      select: { plan: true },
-    })
-    if (!org || !hasFeature(org.plan, 'moduleTournee')) {
-      return forbidden('Le module Tournée est réservé au plan ENTERPRISE. Passez sur /settings/organisation#facturation')
+    if (!hasFeature(projet.organization.plan, 'moduleTournee')) {
+      return forbidden('Module Tournée disponible sur le plan ENTERPRISE uniquement — /settings/organisation#facturation')
     }
 
     const body = await req.json()
@@ -98,6 +92,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const { nom, adresse, ville, telephone, email, checkIn, checkOut, notes } = parsed.data
 
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      return validationError({ checkOut: ['La date de départ doit être après la date d\'arrivée'] })
+    }
+
     const hebergement = await prisma.hebergement.create({
       data: {
         projetId: params.id,
@@ -105,7 +103,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         adresse,
         ville,
         telephone,
-        email,
+        email: email || undefined,
         checkIn: new Date(checkIn),
         checkOut: new Date(checkOut),
         notes,
@@ -115,7 +113,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(hebergement, { status: 201 })
   } catch (err) {
-    void logger.error('POST /api/projets/[id]/hebergements', err, { route: 'POST /api/projets/[id]/hebergements' })
+    console.error('[POST /api/projets/[id]/hebergements]', err)
     return internalError()
   }
 }

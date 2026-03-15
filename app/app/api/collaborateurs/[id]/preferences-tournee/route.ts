@@ -1,66 +1,41 @@
 // ─────────────────────────────────────────────────────────
 // PATCH /api/collaborateurs/[id]/preferences-tournee
-// Modifier les préférences tournée d'un collaborateur
-// doc/19-module-tournee.md §19.3 — ENTERPRISE uniquement
-// Rôle minimum : RH (données sensibles — régime, allergies)
+// Modifier les préférences tournée d'un collaborateur (RH uniquement)
+// doc/19-module-tournee.md §19.3 — données sensibles
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { requireOrgSession, canVoirRH } from '@/lib/auth'
-import { validationError, internalError, notFound, forbidden } from '@/lib/api-response'
-import { hasFeature } from '@/lib/plans'
-import logger from '@/lib/logger'
+import { requireOrgSession } from '@/lib/auth'
+import { internalError, notFound, validationError } from '@/lib/api-response'
 
-const PatchPreferencesTourneeSchema = z.object({
+const PatchPreferencesSchema = z.object({
   preferenceChambre: z.enum(['SANS_PREFERENCE', 'INDIVIDUELLE', 'PARTAGEE_ACCEPTEE']).optional(),
   regimeAlimentaire: z.enum(['STANDARD', 'VEGETARIEN', 'VEGAN', 'SANS_PORC', 'HALAL', 'KASHER', 'AUTRE']).optional(),
   allergies: z.string().max(500).nullable().optional(),
   permisConduire: z.boolean().optional(),
-  permisCategorie: z.string().max(20).nullable().optional(),
-  notesTournee: z.string().max(1000).nullable().optional(),
+  permisCategorie: z.string().max(10).nullable().optional(),
 })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOrgSession({ write: true })
+    // Données sensibles — RH minimum requis
+    const { session, error } = await requireOrgSession({ minRole: 'RH', write: true })
     if (error) return error
 
-    // Seuls RH et Directeur peuvent voir/modifier les données sensibles (régime, allergies)
-    if (!canVoirRH(session)) {
-      return forbidden('Modification des préférences tournée réservée aux rôles RH et Directeur')
-    }
+    const organizationId = session.user.organizationId!
 
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId! },
-      select: { plan: true },
-    })
-    if (!org || !hasFeature(org.plan, 'moduleTournee')) {
-      return forbidden('Le module Tournée est réservé au plan ENTERPRISE. Passez sur /settings/organisation#facturation')
-    }
-
-    // Vérifier que le collaborateur appartient à l'organisation de la session
-    const collaborateur = await prisma.collaborateur.findUnique({
-      where: { id: params.id },
-      include: {
-        user: {
-          include: {
-            memberships: {
-              where: { organizationId: session.user.organizationId! },
-              select: { id: true },
-            },
-          },
-        },
+    // Anti-IDOR : vérifier que le collaborateur appartient à l'org
+    const collab = await prisma.collaborateur.findFirst({
+      where: {
+        id: params.id,
+        user: { memberships: { some: { organizationId } } },
       },
     })
-
-    if (!collaborateur) return notFound('Collaborateur')
-    if (collaborateur.user.memberships.length === 0) {
-      return forbidden('Ce collaborateur n\'appartient pas à votre organisation')
-    }
+    if (!collab) return notFound('Collaborateur')
 
     const body = await req.json()
-    const parsed = PatchPreferencesTourneeSchema.safeParse(body)
+    const parsed = PatchPreferencesSchema.safeParse(body)
     if (!parsed.success) return validationError(parsed.error.flatten())
 
     const updated = await prisma.collaborateur.update({
@@ -71,7 +46,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(parsed.data.allergies !== undefined && { allergies: parsed.data.allergies }),
         ...(parsed.data.permisConduire !== undefined && { permisConduire: parsed.data.permisConduire }),
         ...(parsed.data.permisCategorie !== undefined && { permisCategorie: parsed.data.permisCategorie }),
-        ...(parsed.data.notesTournee !== undefined && { notesTournee: parsed.data.notesTournee }),
       },
       select: {
         id: true,
@@ -80,14 +54,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         allergies: true,
         permisConduire: true,
         permisCategorie: true,
-        notesTournee: true,
-        updatedAt: true,
       },
     })
 
     return NextResponse.json(updated)
   } catch (err) {
-    void logger.error('PATCH /api/collaborateurs/[id]/preferences-tournee', err, { route: 'PATCH /api/collaborateurs/[id]/preferences-tournee' })
+    console.error('[PATCH /api/collaborateurs/[id]/preferences-tournee]', err)
     return internalError()
   }
 }

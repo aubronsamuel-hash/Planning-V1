@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────
 // PATCH /api/affectations/[id]/cachet
-// RH tranche la décision cachet après annulation : DU | ANNULE
-// doc §12.6 — Annulations & Reports
+// Décision RH sur le cachet suite à une annulation
+// doc/12-annulations-reports.md §12.6
+// Accès : RH minimum
 // ─────────────────────────────────────────────────────────
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrgSession, verifyOwnership } from '@/lib/auth'
-import { validationError, internalError, notFound, conflict, forbidden } from '@/lib/api-response'
-import logger from '@/lib/logger'
+import { validationError, internalError, notFound } from '@/lib/api-response'
 
 const CachetSchema = z.object({
   decision: z.enum(['DU', 'ANNULE']),
@@ -19,19 +19,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const { session, error } = await requireOrgSession({ minRole: 'RH', write: true })
     if (error) return error
 
-    // Vérifier le rôle RH
-    const roleOrg = session.user.organizationRole
-    if (roleOrg !== 'RH' && roleOrg !== 'DIRECTEUR') {
-      return forbidden('Seul le RH ou le Directeur peut trancher la décision cachet.')
-    }
+    const body   = await req.json()
+    const parsed = CachetSchema.safeParse(body)
+    if (!parsed.success) return validationError(parsed.error.flatten())
 
     const affectation = await prisma.affectation.findFirst({
       where: { id: params.id },
       include: {
         representation: {
-          include: {
-            projet: { select: { organizationId: true } },
-          },
+          include: { projet: { select: { organizationId: true } } },
         },
       },
     })
@@ -44,45 +40,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     )
     if (ownershipError) return ownershipError
 
+    // Vérifier que l'affectation est bien annulée
     if (
       affectation.confirmationStatus !== 'ANNULEE' &&
       affectation.confirmationStatus !== 'ANNULEE_TARDIVE'
     ) {
-      return conflict('Seules les affectations annulées peuvent avoir une décision de cachet.')
+      return NextResponse.json(
+        { error: 'Seules les affectations annulées peuvent avoir une décision de cachet.' },
+        { status: 400 }
+      )
     }
 
-    if (!affectation.cachetAnnulation) {
-      return conflict('Aucune décision de cachet en attente pour cette affectation.')
-    }
-
-    const body = await req.json()
-    const parsed = CachetSchema.safeParse(body)
-    if (!parsed.success) return validationError(parsed.error.flatten())
-
-    const updated = await prisma.affectation.update({
+    await prisma.affectation.update({
       where: { id: params.id },
-      data: { cachetAnnulation: parsed.data.decision },
+      data:  { cachetAnnulation: parsed.data.decision },
     })
 
-    await prisma.activityLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'AFFECTATION_ANNULEE', // réutilisation du log existant
-        entityType: 'Affectation',
-        entityId: params.id,
-        metadata: {
-          action: 'CACHET_DECISION',
-          decision: parsed.data.decision,
-        },
-      },
-    })
-
-    return NextResponse.json({
-      id: updated.id,
-      cachetAnnulation: updated.cachetAnnulation,
-    })
+    return NextResponse.json({ success: true, cachetAnnulation: parsed.data.decision })
   } catch (err) {
-    void logger.error('PATCH /api/affectations/[id]/cachet', err, { route: 'PATCH /api/affectations/[id]/cachet' })
+    console.error('[PATCH /api/affectations/[id]/cachet]', err)
     return internalError()
   }
 }

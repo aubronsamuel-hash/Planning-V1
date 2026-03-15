@@ -36,13 +36,13 @@ export async function GET(_req: Request) {
     ] = await Promise.all([
       // Nombre total d'organisations actives
       prisma.organization.count({
-        where: { deletedAt: null },
+        where: {},
       }),
 
       // Répartition par plan
       prisma.organization.groupBy({
         by: ['plan'],
-        where: { deletedAt: null },
+        where: {},
         _count: { id: true },
       }),
 
@@ -53,7 +53,7 @@ export async function GET(_req: Request) {
 
       // 5 dernières orgs créées
       prisma.organization.findMany({
-        where: { deletedAt: null },
+        where: {},
         select: { id: true, name: true, plan: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -61,12 +61,12 @@ export async function GET(_req: Request) {
 
       // Orgs en lecture seule (alerte)
       prisma.organization.count({
-        where: { deletedAt: null, isReadOnly: true },
+        where: { isReadOnly: true },
       }),
 
       // Orgs avec paiement échoué (alerte)
       prisma.organization.count({
-        where: { deletedAt: null, paymentFailedAt: { not: null } },
+        where: { paymentFailedAt: { not: null } },
       }),
     ])
 
