@@ -39,7 +39,7 @@ export async function GET(req: Request) {
                 user: { select: { id: true, firstName: true, lastName: true } },
               },
             },
-            postes: {
+            postesRequis: {
               include: {
                 affectations: {
                   where: {
@@ -100,7 +100,7 @@ export async function GET(req: Request) {
           date: string
           showStartTime: string | null
           venueName: string | null
-          postes: {
+          postesRequis: {
             nom: string
             requis: number
             affectations: {
@@ -115,7 +115,7 @@ export async function GET(req: Request) {
         // Représentations futures des 14 prochains jours (via affectations)
         const reprsMap = new Map<string, typeof planning14j[0]>()
 
-        for (const poste of equipe.postes) {
+        for (const poste of equipe.postesRequis) {
           for (const aff of poste.affectations) {
             const reprDate = new Date(aff.representation.date)
             if (reprDate < now || reprDate > J14) continue
@@ -126,7 +126,7 @@ export async function GET(req: Request) {
                 date: aff.representation.date.toISOString(),
                 showStartTime: aff.representation.showStartTime,
                 venueName: aff.representation.venueName,
-                postes: [],
+                postesRequis: [],
               })
             }
           }

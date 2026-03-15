@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     // Récupérer les projets actifs de l'org
     const projetsWhere = {
       organizationId,
-      status: { in: ['EN_PREPARATION', 'EN_COURS'] as const },
+      status: { in: ['EN_PREPARATION', 'EN_COURS'] as ('EN_PREPARATION' | 'EN_COURS')[] },
       ...(projetId ? { id: projetId } : {}),
     }
 

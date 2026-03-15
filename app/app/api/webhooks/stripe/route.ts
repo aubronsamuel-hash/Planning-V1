@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
@@ -8,10 +10,6 @@ import logger from '@/lib/logger'
 
 // Pas de auth session — vérification par signature Stripe uniquement
 // Next.js 14 App Router : req.text() lit le raw body sans configuration supplémentaire
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers internes
@@ -286,14 +284,16 @@ async function handlePaymentFailed(event: Stripe.Event): Promise<void> {
     const recipientEmail = org.billingEmail ?? directeur?.email
     if (recipientEmail) {
       const portalUrl = `${process.env.NEXTAUTH_URL}/api/billing/portal`
-      await sendEmail(
-        paymentFailedEmail({
+      await sendEmail({
+        to: recipientEmail,
+        subject: `⚠️ Problème de paiement — ${org.name}`,
+        html: paymentFailedEmail({
           directeurPrenom: directeur?.firstName ?? 'Directeur',
           organizationName: org.name,
-          montant: montantCentimes,
+          montant: `${(montantCentimes / 100).toFixed(2)} €`,
           portalUrl,
-        })
-      )
+        }),
+      })
     }
 
     // Notification in-app au Directeur
@@ -435,6 +435,9 @@ async function handleInvoiceFinalized(event: Stripe.Event): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-02-25.clover',
+  })
   // Récupérer le raw body — Next.js 14 App Router ne nécessite pas de config spéciale
   const rawBody = await req.text()
 

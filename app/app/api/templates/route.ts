@@ -119,7 +119,8 @@ export async function POST(req: Request) {
             posteData.defaultEndTime   = poste.defaultEndTime
           }
 
-          await tx.posteRequisTemplate.create({ data: posteData })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await tx.posteRequisTemplate.create({ data: posteData as any })
         }
       }
 

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { z } from 'zod'
@@ -6,18 +8,17 @@ import { internalError, validationError, conflict } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
 import logger from '@/lib/logger'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
-
-const APP_URL = process.env.NEXTAUTH_URL!
-
 const CheckoutBodySchema = z.object({
   plan: z.enum(['PRO', 'ENTERPRISE']),
 })
 
 export async function POST(req: Request) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2026-02-25.clover',
+    })
+    const APP_URL = process.env.NEXTAUTH_URL!
+
     const { session, error } = await requireOrgSession({ minRole: 'DIRECTEUR', write: true })
     if (error) return error
 

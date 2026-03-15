@@ -3,6 +3,8 @@
 // DELETE /api/settings/organisation — Supprimer l'organisation (§16.6)
 // doc/06-regles-decisions.md · doc/23-architecture-technique.md
 // ─────────────────────────────────────────────────────────
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import Stripe from 'stripe'
@@ -10,10 +12,6 @@ import { prisma } from '@/lib/prisma'
 import { requireOrgSession } from '@/lib/auth'
 import { validationError, internalError, notFound } from '@/lib/api-response'
 import logger from '@/lib/logger'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
 
 // ── Schémas de validation ──────────────────────────────────
 const PatchOrgSchema = z.object({
@@ -109,6 +107,7 @@ export async function DELETE(req: Request) {
     }
 
     // Annuler l'abonnement Stripe si présent — erreur non bloquante
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' })
     if (org.stripeCustomerId) {
       try {
         const subscriptions = await stripe.subscriptions.list({
@@ -125,18 +124,10 @@ export async function DELETE(req: Request) {
       }
     }
 
-    // Soft delete si le champ deletedAt existe sur Organization, sinon delete hard
-    try {
-      await prisma.organization.update({
-        where: { id: organizationId },
-        data: { deletedAt: new Date() },
-      })
-    } catch {
-      // deletedAt n'existe pas sur le modèle → suppression en cascade
-      await prisma.organization.delete({
-        where: { id: organizationId },
-      })
-    }
+    // Organization n'a pas de deletedAt — suppression en cascade
+    await prisma.organization.delete({
+      where: { id: organizationId },
+    })
 
     return NextResponse.json({ success: true, redirectTo: '/goodbye' })
   } catch (err) {

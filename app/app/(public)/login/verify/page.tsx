@@ -5,7 +5,7 @@
 // Utilise signIn('magic-link', { token }) de NextAuth
 // doc/06-regles-decisions.md Règle #16, #17
 // ─────────────────────────────────────────────────────────
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
@@ -17,7 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   'token-used': 'Ce lien a déjà été utilisé.',
 }
 
-export default function LoginVerifyPage() {
+function LoginVerifyContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
@@ -109,5 +109,25 @@ export default function LoginVerifyPage() {
         </a>
       </div>
     </div>
+  )
+}
+
+export default function LoginVerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">Vérification en cours…</h2>
+        </div>
+      </div>
+    }>
+      <LoginVerifyContent />
+    </Suspense>
   )
 }

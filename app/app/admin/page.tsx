@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options'
 
 type OrgsByPlan = Record<string, number>
 

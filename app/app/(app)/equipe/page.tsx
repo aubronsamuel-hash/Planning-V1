@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import { EquipeClient } from './EquipeClient'
 
@@ -29,5 +29,6 @@ export default async function EquipePage() {
     orderBy: { title: 'asc' },
   })
 
-  return <EquipeClient projets={projets} canInvite={orgRole !== 'COLLABORATEUR'} />
+  // orgRole est forcément DIRECTEUR | REGISSEUR | RH ici (COLLABORATEUR redirigé plus haut)
+  return <EquipeClient projets={projets} canInvite={orgRole != null} />
 }
