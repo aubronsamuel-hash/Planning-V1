@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { SkeletonTableRows } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type ProjetLight = { id: string; title: string; colorCode: string }
 
@@ -83,7 +85,7 @@ export function EquipeClient({
         {canInvite && (
           <button
             onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            className="btn btn-primary"
           >
             + Inviter
           </button>
@@ -126,30 +128,46 @@ export function EquipeClient({
 
       {/* ── Tableau ─────────────────────────────────────── */}
       {loading ? (
-        <div className="text-center py-20">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Chargement…</p>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="text-left py-3 px-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">Nom</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">Rôle / Type</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">Projets actifs</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">DPAE</th>
+                <th className="py-3 px-4" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              <SkeletonTableRows rows={5} cols={5} />
+            </tbody>
+          </table>
         </div>
       ) : error ? (
-        <div className="text-center py-20">
-          <p className="text-red-500 mb-3">⚠️ {error}</p>
-          <button onClick={fetchMembres} className="text-sm text-indigo-600 hover:underline">Réessayer</button>
-        </div>
+        <EmptyState
+          icon="⚠️"
+          title="Impossible de charger l'annuaire"
+          description={error}
+          action={{ label: 'Réessayer', onClick: fetchMembres, variant: 'ghost' }}
+        />
       ) : membres.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-4xl mb-4">👥</p>
-          <p className="text-gray-500 text-sm">
-            {q || contrat || projetId ? 'Aucun membre ne correspond à votre recherche.' : 'Aucun membre pour le moment.'}
-          </p>
-          {(q || contrat || projetId) && (
-            <button
-              onClick={() => { setQ(''); setContrat(''); setProjetId('') }}
-              className="mt-2 text-sm text-indigo-600 hover:underline"
-            >
-              Effacer les filtres
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon="👥"
+          title={q || contrat || projetId ? 'Aucun résultat' : 'Équipe vide'}
+          description={
+            q || contrat || projetId
+              ? 'Aucun membre ne correspond à votre recherche.'
+              : 'Invitez votre premier collaborateur pour commencer.'
+          }
+          action={
+            q || contrat || projetId
+              ? { label: 'Effacer les filtres', onClick: () => { setQ(''); setContrat(''); setProjetId('') }, variant: 'ghost' }
+              : canInvite
+              ? { label: '+ Inviter un collaborateur', onClick: () => setShowInvite(true) }
+              : undefined
+          }
+        />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">

@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type Notif = {
   id: string
@@ -143,15 +145,24 @@ export default function NotificationsPage() {
 
       {/* ── Contenu ─────────────────────────────────────── */}
       {loading ? (
-        <div className="text-center py-20">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Chargement…</p>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 flex items-start gap-3">
+              <Skeleton className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+              <Skeleton className="h-3 w-12 flex-shrink-0" />
+            </div>
+          ))}
         </div>
       ) : notifs.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-4xl mb-4">🔔</p>
-          <p className="text-gray-500 text-sm">Aucune notification pour le moment.</p>
-        </div>
+        <EmptyState
+          icon="🔔"
+          title="Pas encore de notifications"
+          description="Les notifications importantes (affectations, confirmations, DPAE…) apparaîtront ici."
+        />
       ) : (
         <div className="space-y-6">
           {groups.map(({ label, items }) => (

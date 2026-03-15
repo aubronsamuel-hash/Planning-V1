@@ -5,6 +5,7 @@
 // 4 sections : Profil | Sécurité | Préférences | Calendrier
 // ─────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useToast } from '@/components/ui/Toast'
 
 type UserData = {
   id: string
@@ -98,6 +99,7 @@ export default function CompteSettingsClient({ user, icalUrl: initialIcalUrl }: 
 
 // ── Onglet Profil ──────────────────────────────────────────
 function OngletProfil({ user }: { user: UserData }) {
+  const { success, error: toastError } = useToast()
   const [form, setForm] = useState({
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
@@ -126,12 +128,16 @@ function OngletProfil({ user }: { user: UserData }) {
       })
       if (!res.ok) {
         const data = await res.json()
-        setMessage({ type: 'error', text: data.error ?? 'Erreur lors de la mise à jour' })
+        const msg = data.error ?? 'Erreur lors de la mise à jour'
+        setMessage({ type: 'error', text: msg })
+        toastError('Mise à jour échouée', msg)
       } else {
         setMessage({ type: 'success', text: 'Profil mis à jour avec succès.' })
+        success('Profil mis à jour')
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau.' })
+      toastError('Erreur réseau')
     } finally {
       setSaving(false)
     }
@@ -150,12 +156,15 @@ function OngletProfil({ user }: { user: UserData }) {
       const data = await res.json()
       if (!res.ok) {
         setEmailMsg({ type: 'error', text: data.error ?? 'Erreur lors de la demande' })
+        toastError('Demande échouée', data.error ?? 'Erreur lors de la demande')
       } else {
         setEmailMsg({ type: 'success', text: `Un lien de confirmation a été envoyé à ${newEmail}.` })
+        success('Email de confirmation envoyé', `Vérifiez votre boîte ${newEmail}`)
         setNewEmail('')
       }
     } catch {
       setEmailMsg({ type: 'error', text: 'Erreur réseau.' })
+      toastError('Erreur réseau')
     } finally {
       setEmailSending(false)
     }
@@ -263,9 +272,17 @@ function OngletProfil({ user }: { user: UserData }) {
       <button
         type="submit"
         disabled={saving}
-        className="bg-indigo-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="btn btn-primary"
       >
-        {saving ? 'Enregistrement…' : 'Enregistrer le profil'}
+        {saving ? (
+          <>
+            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            Enregistrement…
+          </>
+        ) : 'Enregistrer le profil'}
       </button>
     </form>
   )
@@ -341,6 +358,7 @@ function OngletPreferences({
   timezone: string
   emailPreferences: Record<string, boolean>
 }) {
+  const { success, error: toastError } = useToast()
   const [timezone, setTimezone] = useState(initialTimezone)
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
     affectationNouvelle: true,
@@ -366,12 +384,16 @@ function OngletPreferences({
       })
       if (!res.ok) {
         const data = await res.json()
-        setMessage({ type: 'error', text: data.error ?? 'Erreur lors de la sauvegarde' })
+        const msg = data.error ?? 'Erreur lors de la sauvegarde'
+        setMessage({ type: 'error', text: msg })
+        toastError('Sauvegarde échouée', msg)
       } else {
         setMessage({ type: 'success', text: 'Préférences mises à jour.' })
+        success('Préférences mises à jour')
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau.' })
+      toastError('Erreur réseau')
     } finally {
       setSaving(false)
     }
@@ -430,9 +452,17 @@ function OngletPreferences({
       <button
         type="submit"
         disabled={saving}
-        className="bg-indigo-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="btn btn-primary"
       >
-        {saving ? 'Enregistrement…' : 'Enregistrer les préférences'}
+        {saving ? (
+          <>
+            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            Enregistrement…
+          </>
+        ) : 'Enregistrer les préférences'}
       </button>
     </form>
   )
@@ -440,6 +470,7 @@ function OngletPreferences({
 
 // ── Onglet Calendrier ──────────────────────────────────────
 function OngletCalendrier({ icalUrl: initialIcalUrl }: { icalUrl: string | null }) {
+  const { success, error: toastError } = useToast()
   const [icalUrl, setIcalUrl] = useState<string | null>(initialIcalUrl)
   const [generating, setGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -452,12 +483,16 @@ function OngletCalendrier({ icalUrl: initialIcalUrl }: { icalUrl: string | null 
       const res = await fetch('/api/me/ical/regenerate', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? 'Erreur lors de la génération')
+        const msg = data.error ?? 'Erreur lors de la génération'
+        setError(msg)
+        toastError('Génération échouée', msg)
       } else {
         setIcalUrl(data.icalUrl)
+        success('Lien iCal généré', 'Copiez-le pour l\'ajouter à votre calendrier')
       }
     } catch {
       setError('Erreur réseau.')
+      toastError('Erreur réseau')
     } finally {
       setGenerating(false)
     }
@@ -468,6 +503,7 @@ function OngletCalendrier({ icalUrl: initialIcalUrl }: { icalUrl: string | null 
     try {
       await navigator.clipboard.writeText(icalUrl)
       setCopied(true)
+      success('Lien copié dans le presse-papier')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Fallback : sélectionner le texte
@@ -476,6 +512,7 @@ function OngletCalendrier({ icalUrl: initialIcalUrl }: { icalUrl: string | null 
         input.select()
         document.execCommand('copy')
         setCopied(true)
+        success('Lien copié dans le presse-papier')
         setTimeout(() => setCopied(false), 2000)
       }
     }
@@ -524,12 +561,18 @@ function OngletCalendrier({ icalUrl: initialIcalUrl }: { icalUrl: string | null 
           type="button"
           onClick={handleGenerate}
           disabled={generating}
-          className="mt-4 bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
+          className="btn btn-secondary mt-4"
         >
-          {generating
-            ? 'Génération…'
-            : icalUrl
-            ? 'Régénérer le lien (invalide l\'ancien)'
+          {generating ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Génération…
+            </>
+          ) : icalUrl
+            ? "Régénérer le lien (invalide l'ancien)"
             : 'Générer le lien iCal'}
         </button>
 

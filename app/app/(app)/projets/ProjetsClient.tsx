@@ -6,6 +6,7 @@
 import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 
 // ── Types ──────────────────────────────────────────────────
 type ProjetSummary = {
@@ -91,6 +92,7 @@ function formatPeriode(start: string | null, end: string | null): string {
 export function ProjetsClient({ projets, membres, canCreate, currentUserId }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
+  const { success, error: toastError } = useToast()
 
   // Filtres
   const [search, setSearch] = useState('')
@@ -160,15 +162,19 @@ export function ProjetsClient({ projets, membres, canCreate, currentUserId }: Pr
       })
       if (!res.ok) {
         const data = await res.json()
-        setCreateError(data.error ?? 'Une erreur est survenue')
+        const msg = data.error ?? 'Une erreur est survenue'
+        setCreateError(msg)
+        toastError('Impossible de créer le projet', msg)
         return
       }
       const projet = await res.json()
       setModalOpen(false)
       setForm({ title: '', subtitle: '', type: 'THEATRE', colorCode: '#6366F1', regisseurId: currentUserId, startDate: '', endDate: '' })
+      success('Projet créé !', form.title.trim())
       startTransition(() => router.push(`/projets/${projet.id}`))
     } catch {
       setCreateError('Impossible de contacter le serveur')
+      toastError('Erreur réseau', 'Impossible de contacter le serveur')
     } finally {
       setCreating(false)
     }
@@ -182,9 +188,9 @@ export function ProjetsClient({ projets, membres, canCreate, currentUserId }: Pr
         {canCreate && (
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="btn btn-primary"
           >
-            <span>+</span> Nouveau projet
+            + Nouveau projet
           </button>
         )}
       </div>
@@ -250,7 +256,7 @@ export function ProjetsClient({ projets, membres, canCreate, currentUserId }: Pr
               {canCreate && (
                 <button
                   onClick={() => setModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="btn btn-primary"
                 >
                   + Créer un projet
                 </button>
@@ -517,16 +523,24 @@ export function ProjetsClient({ projets, membres, canCreate, currentUserId }: Pr
                   type="button"
                   onClick={() => setModalOpen(false)}
                   disabled={creating}
-                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="btn btn-ghost"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !form.title.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+                  className="btn btn-primary btn-lg"
                 >
-                  {creating ? 'Création...' : 'Créer le projet'}
+                  {creating ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Création…
+                    </>
+                  ) : 'Créer le projet'}
                 </button>
               </div>
             </form>
